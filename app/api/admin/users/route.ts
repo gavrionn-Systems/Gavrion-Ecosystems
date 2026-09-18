@@ -16,5 +16,10 @@ export async function POST(request:Request){
  if(result.error)return Response.json({error:result.error.message},{status:400});
  const saved=await admin.from('profiles').upsert({id:result.data.user.id,full_name:full_name.trim(),role,active:true});
  if(saved.error)return Response.json({error:'La cuenta fue creada, pero no se pudo asignar el perfil. Revísala en Usuarios antes de volver a crearla.'},{status:500});
+ const {data:membership}=await admin.from('organization_members').select('organization_id').eq('user_id',auth.user.id).eq('active',true).order('created_at',{ascending:true}).limit(1).maybeSingle();
+ if(membership?.organization_id){
+  const assigned=await admin.from('organization_members').upsert({organization_id:membership.organization_id,user_id:result.data.user.id,role,active:true});
+  if(assigned.error)return Response.json({error:'La cuenta fue creada, pero no se pudo asociar a la empresa.'},{status:500});
+ }
  return Response.json({id:result.data.user.id},{status:201});
 }
