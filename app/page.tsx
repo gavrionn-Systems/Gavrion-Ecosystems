@@ -138,7 +138,7 @@ function Inventory({ onEdit, notify }: {
     onEdit: (record?: InventoryRecord) => void;
     notify: (n: Notice) => void;
 }) {
-    const { inventory, materials, settings, deleteInventory, loading } = useEconexoData();
+    const { inventory, settings, deleteInventory, loading } = useEconexoData();
     const [query, setQuery] = useState('');
     const [viewing, setViewing] = useState<InventoryRecord | null>(null);
     const [confirm, setConfirm] = useState<InventoryRecord | null>(null);
@@ -149,26 +149,29 @@ function Inventory({ onEdit, notify }: {
     if (deleting && !source.some(r => r.id === deleting.id))
         source.splice(deletingIndex, 0, deleting);
     const rows = source.filter(r => [r.inventory_code, r.material, r.category, r.supplier].join(' ').toLowerCase().includes(query.toLowerCase()));
-    const stockValue = inventory.reduce((s, r) => s + toCurrency(asNumber(r.cost_total), r.currency ?? 'LPS', settings?.default_currency ?? 'LPS', settings?.usd_to_lps_rate ?? 24.75), 0);
+    const inventoryWithStock = inventory.filter(row => Number(row.tons) > 0 && row.status !== 'in_transit');
+    const inventoryTypes = new Set(inventoryWithStock.map(row => row.material_id ?? row.material.trim().toLocaleLowerCase('es'))).size;
+    const totalTons = inventoryWithStock.reduce((total, row) => total + Number(row.tons || 0), 0);
+    const inventoryValue = inventoryWithStock.reduce((total, row) => total + toCurrency(asNumber(row.cost_total), row.currency ?? 'LPS', settings?.default_currency ?? 'LPS', settings?.usd_to_lps_rate ?? 24.75), 0);
     return <>
 <PageTitle eyebrow="CONTROL DE EXISTENCIAS" title="Inventarios" subtitle="Crea, consulta, edita y elimina registros de residuos." action={<Button size="lg" onClick={() => onEdit()}>
 <Plus />Agregar inventario</Button>}/>
 <div className="summary-strip">
 <div>
 <span>Tipo de residuos</span>
-<strong>{materials.filter(x => x.active).length} activos</strong>
+<strong>{inventoryTypes} activos</strong>
 </div>
 <div>
 <span>Inventario inicial (T)</span>
-<strong>{number(inventory.reduce((s, r) => s + asNumber(r.tons), 0))} toneladas</strong>
+<strong>{number(totalTons)} toneladas</strong>
 </div>
 <div>
 <span>Inventario final (T)</span>
-<strong>{number(inventory.reduce((s, r) => s + asNumber(r.tons), 0))} toneladas</strong>
+<strong>{number(totalTons)} toneladas</strong>
 </div>
 <div>
 <span>Valor de Inventario (L)</span>
-<strong>{money(stockValue, 'LPS')}</strong>
+<strong>{money(inventoryValue, 'LPS')}</strong>
 </div>
 </div>
 <section className="panel table-panel">
