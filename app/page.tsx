@@ -5,6 +5,8 @@ import { TableRow, TableAction, TableSkeleton, TableEmpty } from '@/components/t
 import { BillingProvider, BillingView, useBilling } from '@/components/billing';
 import { supplierDisplayId, clientDisplayId } from '@/lib/party-codes';
 import { AddUser, SupplierCategories } from '@/components/admin-settings';
+import { OnboardingWizard } from '@/components/onboarding-wizard';
+import { PlatformAdminPanel } from '@/components/platform-admin';
 import { defaultSupplierCategories, supplierCategoryId } from '@/lib/supplier-categories';
 import { CodeSettings } from '@/components/code-settings';
 import { MaterialCatalog } from '@/components/material-catalog';
@@ -93,6 +95,7 @@ function AccessGate({ children }: {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
+    const [companyName, setCompanyName] = useState('');
     const [localError, setLocalError] = useState('');
     const [success, setSuccess] = useState('');
     if (!ready)
@@ -106,7 +109,7 @@ function AccessGate({ children }: {
         return <main className="setup-screen">
 <form className="setup-card login-card" onSubmit={async (e) => { e.preventDefault(); setLocalError(''); try {
             if (mode === 'signup') {
-                const result = await signUp({ full_name: fullName, username, email, password });
+                const result = await signUp({ full_name: fullName, username, email, password, company_name: companyName });
                 setSuccess(result.needsConfirmation ? 'Cuenta creada. Revisa tu correo para confirmar el acceso.' : 'Cuenta creada. Preparando tu empresa…');
                 if (result.needsConfirmation) setMode('login');
             } else await signIn(username, password);
@@ -119,6 +122,7 @@ function AccessGate({ children }: {
 <h1>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1>
 {mode === 'login' && <p className="login-description">Ingresa tus credenciales para acceder al sistema.</p>}
 {mode === 'signup' && <label>Nombre completo<input type="text" required minLength={2} value={fullName} onChange={e => setFullName(e.target.value)}/></label>}
+{mode === 'signup' && <label>Nombre de la empresa<input type="text" required minLength={2} value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ej. Reciclajes del Norte"/></label>}
 <label>Nombre de usuario<span className="login-input-wrap"><UserRound aria-hidden="true"/><input type="text" required minLength={3} maxLength={32} pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,31}" autoComplete="username" value={username} onChange={e => setUsername(e.target.value)}/></span>
 </label>
 {mode === 'signup' && <label>Correo electrónico<span className="login-input-wrap"><Mail aria-hidden="true"/><input type="email" required value={email} onChange={e => setEmail(e.target.value)}/></span></label>}
@@ -909,7 +913,7 @@ function CatalogEditor({ kind, item, onClose, notify }: {
 function SettingsView({ notify }: {
     notify: (n: Notice) => void;
 }) {
-    const { settings, materials, categories, profiles, saveSettings, toggleMaterial, toggleCategory, saveProfile, loading } = useEconexoData();
+    const { settings, materials, categories, profiles, saveSettings, toggleMaterial, toggleCategory, saveProfile, loading, platformOrganizations } = useEconexoData();
     const [tab, setTab] = useState('Empresa');
     const [name, setName] = useState(settings?.name ?? 'Gavrion EcoSystems');
     const [logo, setLogo] = useState(settings?.logo_url ?? '');
@@ -941,7 +945,7 @@ function SettingsView({ notify }: {
     return <>
 <PageTitle eyebrow="ADMINISTRACIÓN" title="Configuración" subtitle="Cambios persistentes para empresa, usuarios y catálogo."/>
 <div className="settings-layout">
-<aside className="settings-nav">{['Empresa', 'Usuarios', 'Agregar usuarios', 'Categorías de proveedores', 'Materiales y categorías', 'Códigos'].map(t => <button aria-label={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)} key={t}>{t === 'Empresa' ? <Building2 /> : t === 'Usuarios' ? <UserCog /> : <Boxes />}<span>{t}</span>
+<aside className="settings-nav">{['Empresa', 'Usuarios', 'Agregar usuarios', 'Categorías de proveedores', 'Materiales y categorías', 'Códigos', ...(platformOrganizations.length ? ['Plataforma'] : [])].map(t => <button aria-label={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)} key={t}>{t === 'Empresa' ? <Building2 /> : t === 'Usuarios' ? <UserCog /> : t === 'Plataforma' ? <Building2 /> : <Boxes />}<span>{t}</span>
 </button>)}</aside>
 <section className="panel settings-content">{tab === 'Agregar usuarios' && <AddUser/>}{tab === 'Categorías de proveedores' && <SupplierCategories/>}{tab === 'Empresa' && <>
 <div className="settings-head">
@@ -1022,7 +1026,7 @@ function SettingsView({ notify }: {
 <p>Inventarios, generadores de residuos y clientes; sin información financiera global.</p>
 </div>
 </div>
-</>}{tab === 'Códigos' && <CodeSettings/>}{tab === 'Materiales y categorías' && <MaterialCatalog notify={(message,tone)=>notify({message,tone})}/>}</section>
+</>}{tab === 'Códigos' && <CodeSettings/>}{tab === 'Materiales y categorías' && <MaterialCatalog notify={(message,tone)=>notify({message,tone})}/>} {tab === 'Plataforma' && <PlatformAdminPanel/>}</section>
 </div>{catalog && <CatalogEditor kind={catalog.kind} item={catalog.item?.id ? catalog.item : undefined} onClose={() => setCatalog(null)} notify={notify}/>}</>;
 }
 function EconexoApp() {
@@ -1093,7 +1097,7 @@ function EconexoApp() {
 <button onClick={() => void refresh()}>Reintentar</button>
 </div>}{view === 'dashboard' && isAdmin && <BusinessDashboard />}{view === 'inventarios' && <Inventory onEdit={editInventory} notify={notify}/>} {view === 'facturacion' && isAdmin && <WeightTickets notify={(message, tone) => notify({ message, tone })}/>} {view === 'inventario-form' && <InventoryForm record={editingInventory} onBack={() => go('inventarios')} notify={notify}/>} {view === 'abastecimiento' && <Supply notify={notify}/>} {view === 'clientes' && <Clients notify={notify}/>} {view === 'certificados' && isAdmin && <Certificates/>} {view === 'reportes' && isAdmin && <FinancialReports notify={(message,tone)=>notify({message,tone})}/>} {view === 'configuracion' && isAdmin && <SettingsView notify={notify}/>}</div>
 </section><footer className="site-footer">Derechos reservados · Gavrion EcoSystems</footer>{notice && <div className={`toast ${notice.tone === 'error' ? 'toast-error' : ''}`}>
-<span>{notice.tone === 'error' ? <X /> : <Check />}</span>{notice.message}</div>}</main>;
+<span>{notice.tone === 'error' ? <X /> : <Check />}</span>{notice.message}</div>}{settings?.onboarding_completed === false && <OnboardingWizard onComplete={() => void refresh()} />}</main>;
 }
 export default function Home() { return <EconexoDataProvider>
 <BillingProvider>
