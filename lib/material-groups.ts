@@ -14,6 +14,30 @@ export const defaultMaterialTypes = [
   {id:'mat-batteries',name:'Baterías',group_id:'raee'},
   {id:'mat-glass',name:'Vidrio',group_id:'glass'},
 ];
+const normalizeGroupKey = (value:string) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g,'')
+  .toLocaleLowerCase('es')
+  .replace(/[^a-z0-9]+/g,'-')
+  .replace(/^-|-$/g,'');
+const canonicalGroupKey = (value:string) => {
+  const key=normalizeGroupKey(value);
+  if(['ferrous','ferroso','ferrosos'].includes(key))return 'ferrous';
+  if(['non-ferrous','nonferrous','no-ferroso','no-ferrosos','no-ferrous'].includes(key))return 'non-ferrous';
+  if(['plastic','plastico','plasticos'].includes(key))return 'plastic';
+  if(['paper','papel'].includes(key))return 'paper';
+  if(['cardboard','carton'].includes(key))return 'cardboard';
+  if(['raee','baterias','bateria','electronic-waste'].includes(key))return 'raee';
+  if(['glass','vidrio'].includes(key))return 'glass';
+  return key;
+};
+/** True when a material belongs to a configured group, including legacy IDs/names. */
+export function materialBelongsToGroup(material:{name:string;group_id?:string|null}, group:{id:string;name:string}) {
+  const inferred=materialGroupId({name:material.name});
+  const materialKeys=[material.group_id??'', inferred, material.name].map(canonicalGroupKey).filter(Boolean);
+  const groupKeys=[group.id, group.name, materialGroupId({name:group.name})].map(canonicalGroupKey).filter(Boolean);
+  return materialKeys.some(key=>groupKeys.includes(key));
+}
 export function materialGroupId(material:{name:string;group_id?:string|null}) {
   if(material.group_id)return material.group_id;
   const name=material.name.toLocaleLowerCase('es');
@@ -23,6 +47,7 @@ export function materialGroupId(material:{name:string;group_id?:string|null}) {
   if(name.includes('papel'))return 'paper';
   if(name.includes('plást'))return 'plastic';
   if(name.includes('raee'))return 'raee';
+  if(/pet|bater[ií]a|electr[oó]nic/.test(name))return name.includes('bater')?'raee':'plastic';
   if(name.includes('vidri'))return 'glass';
   return '';
 }
