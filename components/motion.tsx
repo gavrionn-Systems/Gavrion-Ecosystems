@@ -39,14 +39,14 @@ export function RefreshButton({ refresh }: { refresh: () => Promise<void> }) {
   }}><RefreshCw className={busy ? 'refresh-motion' : ''}/></Button>;
 }
 
-export function NotificationBell({ count = 0 }: { count?: number }) {
+export function NotificationBell({ count = 0, onClick }: { count?: number; onClick?: () => void }) {
   const previous = useRef(0);
   const [pulse, setPulse] = useState(false);
   useEffect(() => {
     if (count > previous.current) setPulse(true);
     previous.current = count;
   }, [count]);
-  return <Button variant="ghost" size="icon" className="notification-button" aria-label={`Notificaciones: ${count} nuevas`}><Bell className={pulse ? 'bell-motion' : ''} onAnimationEnd={() => setPulse(false)}/><i>{count}</i></Button>;
+  return <Button variant="ghost" size="icon" className="notification-button" title={count ? `${count} notificaciones nuevas` : 'Notificaciones'} aria-label={`Notificaciones: ${count} nuevas`} onClick={onClick}><Bell className={pulse ? 'bell-motion' : ''} onAnimationEnd={() => setPulse(false)}/>{count > 0 && <i>{count}</i>}</Button>;
 }
 
 export function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
