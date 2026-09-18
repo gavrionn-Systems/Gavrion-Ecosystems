@@ -68,3 +68,32 @@ svg{width:18px;height:18px}.sidebar .brand>div{min-width:0}.sidebar .brand stron
 .site-footer{padding:0 32px 22px;color:#7b879b;text-align:center;font-size:11px;letter-spacing:.01em}
 @media(max-width:760px){.site-footer{padding:0 18px 16px;font-size:10px}}
  .form-success{margin-top:14px;border:1px solid #bce8d6;background:#effcf6;color:#16805d;border-radius:10px;padding:10px 12px;font-size:11px}.login-switch{border:0;background:transparent;color:#176fd3;font:inherit;font-size:11px;cursor:pointer;padding:8px}.login-switch:hover{text-decoration:underline}
+
+/* Login: superficie blanca, jerarquía limpia y acentos mínimos. Las reglas del
+   logo y sus animaciones viven en responsive.css y no se sobrescriben aquí. */
+.setup-screen{position:relative;isolation:isolate;min-height:100svh;overflow-x:hidden;overflow-y:auto;padding:clamp(20px,5vw,56px);background:#fff}
+.setup-screen::before,.setup-screen::after{content:"";position:absolute;z-index:-1;pointer-events:none;border-radius:999px;filter:blur(2px)}
+.setup-screen::before{width:min(44vw,520px);height:min(44vw,520px);left:-18vw;top:-24vw;background:radial-gradient(circle,#f1f5f0 0%,rgba(241,245,240,0) 72%)}
+.setup-screen::after{width:min(36vw,460px);height:min(36vw,460px);right:-15vw;bottom:-22vw;background:radial-gradient(circle,#f4f5f2 0%,rgba(244,245,242,0) 72%)}
+.setup-card.login-card{position:relative;width:min(440px,100%);padding:clamp(25px,5vw,42px);border:1px solid #e2e9f1;border-radius:24px;background:rgba(255,255,255,.98);box-shadow:0 24px 70px rgba(28,61,95,.10),0 4px 14px rgba(28,61,95,.04);animation:login-card-in .52s cubic-bezier(.22,.8,.28,1) both;transition:box-shadow .28s ease}
+.setup-card.login-card:hover{box-shadow:0 28px 78px rgba(28,61,95,.12),0 6px 18px rgba(28,61,95,.05)}
+.setup-card.login-card::before{content:"";position:absolute;left:clamp(25px,5vw,42px);right:clamp(25px,5vw,42px);top:0;height:3px;border-radius:0 0 999px 999px;background:linear-gradient(90deg,#1478df,#29b7bd)}
+.login-card .platform-login-logo-frame{width:min(100%,330px);margin:0 auto 22px;border:1px solid rgba(111,139,123,.2);border-radius:16px;box-shadow:0 14px 30px rgba(34,56,55,.13),0 0 24px rgba(124,157,137,.08)}
+.login-card .eyebrow{margin:0;text-align:center;color:#26352b;font-size:10px;letter-spacing:.18em;font-weight:800}
+.login-card h1{margin:2px 0 4px;text-align:center;color:#111315;font-size:30px;line-height:1.12;letter-spacing:-.04em;font-weight:700}
+.login-card>p.login-description{margin:0 0 4px;text-align:center;color:#60745f;font-size:12px;line-height:1.5}
+.login-card label{color:#26352b;font-size:11px;letter-spacing:.01em}
+.login-input-wrap{position:relative;display:flex;align-items:center}
+.login-input-wrap>svg{position:absolute;left:13px;width:16px;height:16px;color:#849284;pointer-events:none;z-index:1}
+.login-card input{height:46px;width:100%;padding-left:40px;border-color:#dfe5df;border-radius:12px;background:#fff;color:#111315;transition:border-color .18s ease,box-shadow .18s ease,background-color .18s ease}
+.login-card input:hover{border-color:#bdcbbd;background:#fcfdfc}
+.login-card input:focus{border-color:#60745f;box-shadow:0 0 0 4px rgba(96,116,95,.12);background:#fff}
+.login-input-wrap:focus-within>svg{color:#60745f}
+.login-card>[data-slot="button"]{width:100%;height:46px;margin-top:3px;border-radius:11px;background:linear-gradient(135deg,#111315,#26352b);color:#fff;box-shadow:0 9px 18px rgba(17,19,21,.18);font-weight:700;transition:transform .28s ease,background .28s ease,box-shadow .28s ease}
+.login-card>[data-slot="button"]:hover{background:linear-gradient(135deg,#1a1e1b,#334b38);box-shadow:0 12px 24px rgba(17,19,21,.24),0 0 0 1px rgba(96,116,95,.18);transform:translateY(-1px)}
+.login-card .login-switch{width:100%;margin-top:-2px;color:#60745f;font-size:11px;transition:color .28s ease,text-decoration-color .28s ease}
+.login-card .login-switch:hover{color:#26352b;text-decoration-color:#a8b5a3}
+.login-card .form-error,.login-card .form-success{margin-top:1px}
+@keyframes login-card-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:520px){.setup-screen{padding:16px 12px}.setup-card.login-card{padding:25px 20px 22px;border-radius:20px}.setup-card.login-card::before{left:20px;right:20px}.login-card h1{font-size:27px}.login-card .platform-login-logo-frame{margin-bottom:18px}}
+@media(prefers-reduced-motion:reduce){.setup-card.login-card,.setup-card.login-card input,.login-card>[data-slot="button"],.login-card .login-switch{transition:none;animation:none}}
