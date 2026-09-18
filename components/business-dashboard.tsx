@@ -15,14 +15,15 @@ export function BusinessDashboard(){
   const {inventory,suppliers,clients,materials,settings,configured}=useEconexoData(),{invoices}=useBilling();
   const [period,setPeriod]=useState('Mensual'),[unit,setUnit]=useState<'lb'|'ton'>('ton');
   const [tickets,setTickets]=useState<WeightDocument[]>([]),[loaded,setLoaded]=useState(false),[error,setError]=useState('');
+  const [registeredWaste,setRegisteredWaste]=useState<{pounds:number;date:string}[]>([]);
   useEffect(()=>{let active=true;setLoaded(false);(async()=>{try{
-    if(configured){const result=await createClient().from('weight_tickets').select('document');if(result.error)throw result.error;if(active)setTickets((result.data??[]).map(r=>r.document as WeightDocument))}
+    if(configured){const client=createClient();const [ticketResult,wasteResult]=await Promise.all([client.from('weight_tickets').select('document'),client.from('inventory_movements').select('pounds,occurred_at,description').eq('type','adjustment').ilike('description','Merma%')]);if(ticketResult.error)throw ticketResult.error;if(wasteResult.error)throw wasteResult.error;if(active){setTickets((ticketResult.data??[]).map(r=>r.document as WeightDocument));setRegisteredWaste((wasteResult.data??[]).map(row=>({pounds:Number(row.pounds??0),date:new Date(String(row.occurred_at)).toISOString().slice(0,10)})))}}
     else{const records=JSON.parse(localStorage.getItem('gavrion-weight-tickets-v1')||'[]');if(!Array.isArray(records))throw Error('Historial de boletas inválido.');if(active)setTickets(records)}
     if(active)setError('');
   }catch(e){if(active)setError(e instanceof Error?e.message:'No se pudo cargar el historial.')}finally{if(active)setLoaded(true)}})();return()=>{active=false}},[configured,inventory]);
   const bounds=periodBounds(period);
   const all=useMemo(()=>businessMovements(inventory,tickets,invoices),[inventory,tickets,invoices]);
-  const movements=all.filter(m=>m.date>=bounds.start&&m.date<=bounds.end),summary=summarize(movements);
+  const movements=all.filter(m=>m.date>=bounds.start&&m.date<=bounds.end),summaryBase=summarize(movements),registeredWastePounds=registeredWaste.filter(m=>m.date>=bounds.start&&m.date<=bounds.end).reduce((sum,m)=>sum+m.pounds,0),summary={...summaryBase,waste:summaryBase.waste+registeredWastePounds};
   const weight=(n:number)=>number(unit==='ton'?n/2000:n),unitLabel=unit==='ton'?'toneladas':'lb';
   const stock=inventory.reduce((s,r)=>s+Number(r.pounds),0),stockFor=(status:string)=>inventory.filter(r=>r.status===status).reduce((s,r)=>s+Number(r.pounds),0);
   const averageCost=summary.purchased>0?movements.filter(m=>m.kind==='purchase'&&m.cost!=null).reduce((s,m)=>s+(m.cost??0),0)/summary.purchased:0;
