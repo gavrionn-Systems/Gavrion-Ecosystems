@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { Bell, Boxes, Building2, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Edit3, Eye, FileBarChart, Filter, LayoutDashboard, Menu, PackageCheck, Plus, RefreshCw, Search, Settings, ShoppingCart, Trash2, TrendingDown, TrendingUp, Truck, UserCog, Users, X, ReceiptText, } from 'lucide-react';
+import { Bell, Boxes, Building2, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Edit3, Eye, FileBarChart, Filter, LayoutDashboard, Lock, Mail, Menu, PackageCheck, Plus, RefreshCw, Search, Settings, ShoppingCart, Trash2, TrendingDown, TrendingUp, Truck, UserCog, UserRound, Users, X, ReceiptText, } from 'lucide-react';
 import { TableRow, TableAction, TableSkeleton, TableEmpty } from '@/components/table-effects';
 import { BillingProvider, BillingView, useBilling } from '@/components/billing';
 import { supplierDisplayId, clientDisplayId } from '@/lib/party-codes';
@@ -89,6 +89,7 @@ function AccessGate({ children }: {
 }) {
     const { ready, user, loading, error, signIn, signUp, demoMode } = useEconexoData();
     const [mode, setMode] = useState<'login' | 'signup'>('login');
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -105,10 +106,10 @@ function AccessGate({ children }: {
         return <main className="setup-screen">
 <form className="setup-card login-card" onSubmit={async (e) => { e.preventDefault(); setLocalError(''); try {
             if (mode === 'signup') {
-                const result = await signUp({ full_name: fullName, email, password });
+                const result = await signUp({ full_name: fullName, username, email, password });
                 setSuccess(result.needsConfirmation ? 'Cuenta creada. Revisa tu correo para confirmar el acceso.' : 'Cuenta creada. Preparando tu empresa…');
                 if (result.needsConfirmation) setMode('login');
-            } else await signIn(email, password);
+            } else await signIn(username, password);
         }
         catch (err) {
             setLocalError(err instanceof Error ? err.message : 'No fue posible iniciar sesión');
@@ -116,11 +117,12 @@ function AccessGate({ children }: {
 <div className="platform-login-logo-frame"><img className="platform-login-logo" src={PLATFORM_LOGO} alt={PLATFORM_NAME}/></div>
 <p className="eyebrow">GAVRION ECOSYSTEMS</p>
 <h1>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1>
-<p>{demoMode ? 'Modo demostración local.' : mode === 'login' ? 'Accede con tu usuario de Supabase Authentication.' : 'Crea tu cuenta y se preparará una empresa SaaS independiente.'}</p>
+{mode === 'login' && <p className="login-description">Ingresa tus credenciales para acceder al sistema.</p>}
 {mode === 'signup' && <label>Nombre completo<input type="text" required minLength={2} value={fullName} onChange={e => setFullName(e.target.value)}/></label>}
-<label>Correo electrónico<input type="email" required value={email} onChange={e => setEmail(e.target.value)}/>
+<label>Nombre de usuario<span className="login-input-wrap"><UserRound aria-hidden="true"/><input type="text" required minLength={3} maxLength={32} pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,31}" autoComplete="username" value={username} onChange={e => setUsername(e.target.value)}/></span>
 </label>
-<label>Contraseña<input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)}/>
+{mode === 'signup' && <label>Correo electrónico<span className="login-input-wrap"><Mail aria-hidden="true"/><input type="email" required value={email} onChange={e => setEmail(e.target.value)}/></span></label>}
+<label>Contraseña<span className="login-input-wrap"><Lock aria-hidden="true"/><input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)}/></span>
 </label>{(localError || error) && <div className="form-error">{localError || error}</div>}{success && <div className="form-success">{success}</div>}<Button size="lg" type="submit" disabled={loading}>{loading ? 'Procesando…' : mode === 'login' ? 'Ingresar al sistema' : 'Crear cuenta'}</Button>
 {!demoMode && <button type="button" className="login-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setLocalError(''); setSuccess(''); }}>{mode === 'login' ? '¿Primera vez? Crear cuenta' : 'Ya tengo una cuenta · Iniciar sesión'}</button>}
 </form>
@@ -986,7 +988,7 @@ function SettingsView({ notify }: {
 <span className="large-avatar">{initials(p.full_name)}</span>
 <p>
 <strong>{p.full_name}</strong>
-<small>{p.id.slice(0, 8)}…</small>
+<small>Usuario: {p.username || p.id.slice(0, 8) + '…'}</small>
 </p>
 <select className="inline-select" value={p.role} onChange={async (e) => { try {
         await saveProfile(p.id, { role: e.target.value as 'admin' | 'employee' });
