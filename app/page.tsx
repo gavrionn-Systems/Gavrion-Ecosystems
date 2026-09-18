@@ -205,7 +205,8 @@ function Inventory({ onEdit, notify }: {
     onEdit: (record?: InventoryRecord) => void;
     notify: (n: Notice) => void;
 }) {
-    const { inventory, settings, deleteInventory, loading } = useEconexoData();
+    const { inventory, settings, deleteInventory, loading, profiles, user } = useEconexoData();
+    const canManageWaste = profiles.some(profile => profile.id === user?.id && profile.role === 'admin' && profile.active);
     const [query, setQuery] = useState('');
     const [viewing, setViewing] = useState<InventoryRecord | null>(null);
     const [confirm, setConfirm] = useState<InventoryRecord | null>(null);
@@ -222,8 +223,8 @@ function Inventory({ onEdit, notify }: {
     const totalTons = inventoryWithStock.reduce((total, row) => total + Number(row.tons || 0), 0);
     const inventoryValue = inventoryWithStock.reduce((total, row) => total + toCurrency(asNumber(row.cost_total), row.currency ?? 'LPS', settings?.default_currency ?? 'LPS', settings?.usd_to_lps_rate ?? 24.75), 0);
     return <>
-<PageTitle eyebrow="CONTROL DE EXISTENCIAS" title="Inventarios" subtitle="Crea, consulta, edita y elimina registros de residuos." action={<div className="page-title-actions"><Button variant="outline" size="lg" onClick={() => setWasteOpen(true)}>
-<TrendingDown />Registrar merma</Button><Button size="lg" onClick={() => onEdit()}>
+<PageTitle eyebrow="CONTROL DE EXISTENCIAS" title="Inventarios" subtitle="Crea, consulta, edita y elimina registros de residuos." action={<div className="page-title-actions">{canManageWaste && <Button variant="outline" size="lg" onClick={() => setWasteOpen(true)}>
+<TrendingDown />Registrar merma</Button>}<Button size="lg" onClick={() => onEdit()}>
 <Plus />Agregar inventario</Button></div>}/>
 <div className="summary-strip">
 <div>
@@ -1175,7 +1176,7 @@ function EconexoApp() {
 </span>
 <div className="topbar-spacer"/>
 <RefreshButton refresh={refresh}/>
-<NotificationBell count={0}/>
+<NotificationBell count={0} onClick={() => notify({ message: 'No hay notificaciones nuevas' })}/>
 <div className="profile-wrap">
 <button className="profile" onClick={() => setProfileOpen(!profileOpen)}>
 <span className="avatar">{initials(profile?.full_name ?? user?.email ?? 'Usuario')}</span>
