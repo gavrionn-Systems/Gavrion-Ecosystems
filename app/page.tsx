@@ -17,7 +17,7 @@ import { Certificates } from '@/components/certificates';
 import { WeightTickets } from '@/components/weight-tickets';
 import { Button } from '@/components/ui/button';
 import { AnimatedValue, RefreshButton, NotificationBell, MobileDrawer } from '@/components/motion';
-import { EconexoDataProvider, useEconexoData, type CategoryRecord, type ClientRecord, type InventoryRecord, type MaterialRecord, type SupplierRecord, } from '@/lib/econexo-data';
+import { EconexoDataProvider, useEconexoData, type CategoryRecord, type ClientRecord, type InventoryRecord, type MaterialRecord, type ProfileRecord, type SupplierRecord, } from '@/lib/econexo-data';
 type View = 'certificados' | 'dashboard' | 'inventarios' | 'inventario-form' | 'facturacion' | 'abastecimiento' | 'clientes' | 'reportes' | 'configuracion' | 'plataforma';
 const PLATFORM_NAME = 'Gavrion EcoSystems';
 const PLATFORM_LOGO = '/gavrion-ecosystems-logo.png';
@@ -87,6 +87,23 @@ function EmptyState({ message }: {
 function FieldError({ children }: {
     children?: string;
 }) { return children ? <small className="field-error">{children}</small> : null; }
+function PasswordRecoveryModal({ onClose }: { onClose: () => void }) {
+    const { requestPasswordReset, loading } = useEconexoData();
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
+    const submit = async (event: React.FormEvent) => {
+        event.preventDefault(); setMessage(''); setError('');
+        try { await requestPasswordReset(email); setMessage('Si existe una cuenta con ese correo, recibirás un enlace para restablecer la contraseña.'); }
+        catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo solicitar el restablecimiento.'); }
+    };
+    return <Modal title="Recuperar contraseña" subtitle="Disponible para cuentas que tienen un correo registrado." onClose={onClose}>
+<form onSubmit={submit}><label>Correo electrónico<input autoFocus required type="email" value={email} onChange={event => setEmail(event.target.value)} /></label>
+<p className="login-help">Los empleados sin correo deben pedir al administrador una contraseña temporal o cambiarla desde su cuenta.</p>
+{error && <div className="form-error">{error}</div>}{message && <div className="form-success">{message}</div>}
+<div className="modal-actions"><Button type="button" variant="outline" onClick={onClose}>Cerrar</Button><Button type="submit" disabled={loading}>{loading ? 'Enviando…' : 'Enviar enlace'}</Button></div></form>
+</Modal>;
+}
 function AccessGate({ children }: {
     children: React.ReactNode;
 }) {
@@ -99,6 +116,7 @@ function AccessGate({ children }: {
     const [companyName, setCompanyName] = useState('');
     const [localError, setLocalError] = useState('');
     const [success, setSuccess] = useState('');
+    const [recoveryOpen, setRecoveryOpen] = useState(false);
     if (!ready)
         return <main className="setup-screen">
 <div className="setup-card">
@@ -129,9 +147,10 @@ function AccessGate({ children }: {
 {mode === 'signup' && <label>Correo electrónico<span className="login-input-wrap"><Mail aria-hidden="true"/><input type="email" required value={email} onChange={e => setEmail(e.target.value)}/></span></label>}
 <label>Contraseña<span className="login-input-wrap"><Lock aria-hidden="true"/><input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)}/></span>
 </label>{(localError || error) && <div className="form-error">{localError || error}</div>}{success && <div className="form-success">{success}</div>}<Button size="lg" type="submit" disabled={loading}>{loading ? 'Procesando…' : mode === 'login' ? 'Ingresar al sistema' : 'Crear cuenta'}</Button>
+{!demoMode && mode === 'login' && <button type="button" className="login-switch" onClick={() => setRecoveryOpen(true)}>¿Olvidaste tu contraseña?</button>}
 {!demoMode && <button type="button" className="login-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setLocalError(''); setSuccess(''); }}>{mode === 'login' ? '¿Primera vez? Crear cuenta' : 'Ya tengo una cuenta · Iniciar sesión'}</button>}
 </form>
-</main>;
+{recoveryOpen && <PasswordRecoveryModal onClose={() => setRecoveryOpen(false)}/>}</main>;
     return <>{children}</>;
 }
 function Inventory({ onEdit, notify }: {
@@ -914,10 +933,30 @@ function CatalogEditor({ kind, item, onClose, notify }: {
 </form>
 </Modal>;
 }
+function PasswordModal({ onClose, notify }: { onClose: () => void; notify: (n: Notice) => void }) {
+    const { changePassword, loading } = useEconexoData();
+    const [password, setPassword] = useState('');
+    const [confirmation, setConfirmation] = useState('');
+    const [error, setError] = useState('');
+    const submit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (password.length < 12) { setError('La contraseña debe tener al menos 12 caracteres.'); return; }
+        if (password !== confirmation) { setError('Las contraseñas no coinciden.'); return; }
+        try { await changePassword(password); notify({ message: 'Contraseña actualizada correctamente' }); onClose(); }
+        catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo actualizar la contraseña.'); }
+    };
+    return <Modal title="Cambiar contraseña" subtitle="Puedes actualizarla desde tu cuenta sin usar correo electrónico." onClose={onClose}>
+<form onSubmit={submit}>
+<div className="form-grid"><label className="full">Nueva contraseña<input autoFocus required type="password" minLength={12} autoComplete="new-password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Mínimo 12 caracteres" /></label><label className="full">Confirmar contraseña<input required type="password" minLength={12} autoComplete="new-password" value={confirmation} onChange={event => setConfirmation(event.target.value)} /></label></div>
+{error && <div className="form-error">{error}</div>}
+<div className="modal-actions"><Button type="button" variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" disabled={loading}>{loading ? 'Actualizando…' : 'Actualizar contraseña'}</Button></div>
+</form>
+</Modal>;
+}
 function SettingsView({ notify }: {
     notify: (n: Notice) => void;
 }) {
-    const { settings, materials, categories, profiles, saveSettings, toggleMaterial, toggleCategory, saveProfile, loading } = useEconexoData();
+    const { settings, materials, categories, profiles, saveSettings, uploadCompanyLogo, toggleMaterial, toggleCategory, saveProfile, loading } = useEconexoData();
     const [tab, setTab] = useState('Empresa');
     const [name, setName] = useState(settings?.name ?? 'Gavrion EcoSystems');
     const [logo, setLogo] = useState(settings?.logo_url ?? '');
@@ -932,19 +971,24 @@ function SettingsView({ notify }: {
         item?: MaterialRecord | CategoryRecord;
     } | null>(null);
     const [error, setError] = useState('');
+    const resetPassword = async (profile: ProfileRecord) => {
+      const temporary = window.prompt(`Nueva contraseña temporal para ${profile.username || profile.full_name} (mínimo 12 caracteres):`);
+      if (temporary === null) return;
+      if (temporary.length < 12) { notify({ message: 'La contraseña debe tener al menos 12 caracteres.', tone: 'error' }); return; }
+      try { await saveProfile(profile.id, { password: temporary }); notify({ message: 'Contraseña temporal actualizada' }); }
+      catch (reason) { notify({ message: reason instanceof Error ? reason.message : 'No se pudo actualizar la contraseña.', tone: 'error' }); }
+    };
     const saveCompany = async () => {
       if(name.trim().length<2 || !Number.isFinite(rate) || rate<=0 || fiscalAddress.trim().length<4 || fiscalPhone.replace(/\D/g,'').length<8){setError('Ingresa nombre, dirección, teléfono válido y una tasa mayor que cero.');return;}
       try{await saveSettings({name:name.trim(),logo_url:logo||null,default_currency:currency,usd_to_lps_rate:rate,default_weight_unit:unit,fiscal_address:fiscalAddress.trim(),fiscal_phone:fiscalPhone.trim()});setError('');notify({message:'Identidad de la empresa guardada'});}catch(e){setError(e instanceof Error?e.message:'No fue posible guardar');}
     };
-    const handleLogoFile = (file?: File) => {
+    const handleLogoFile = async (file?: File) => {
       if(!file) return;
       if(!file.type.startsWith('image/')){setLogoError('Selecciona un archivo de imagen válido.');return;}
       if(file.size>2*1024*1024){setLogoError('La imagen no puede superar 2 MB.');return;}
       setLogoError('');
-      const reader=new FileReader();
-      reader.onload=()=>setLogo(String(reader.result??''));
-      reader.onerror=()=>setLogoError('No se pudo leer la imagen.');
-      reader.readAsDataURL(file);
+      try { setLogo(await uploadCompanyLogo(file)); }
+      catch (reason) { setLogoError(reason instanceof Error ? reason.message : 'No se pudo subir la imagen.'); }
     };
     return <>
 <PageTitle eyebrow="ADMINISTRACIÓN" title="Configuración" subtitle="Cambios persistentes para empresa, usuarios y catálogo."/>
@@ -959,7 +1003,7 @@ function SettingsView({ notify }: {
 <div className="logo-editor">{logo ? <img className="company-logo-preview" src={logo} alt="Logo de la empresa"/> : <span className="brand-mark">{name[0]?.toUpperCase() || 'E'}</span>}<div>
 <strong>Logo de la empresa</strong>
 <small>Sube una imagen desde tu computadora o usa una URL pública.</small>
-<label className="logo-upload">Seleccionar imagen<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={e=>handleLogoFile(e.target.files?.[0])}/></label>
+<label className="logo-upload">Seleccionar imagen<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={e=>void handleLogoFile(e.target.files?.[0])}/></label>
 </div>
 </div>
 <div className="form-grid">
@@ -1017,7 +1061,7 @@ function SettingsView({ notify }: {
         notify({ message: err instanceof Error ? err.message : 'No se pudo actualizar', tone: 'error' });
     } }}/>
 <i />
-</label>
+</label><button type="button" className="icon-button" aria-label={`Restablecer contraseña de ${p.full_name}`} onClick={() => void resetPassword(p)}><Lock /></button>
 </div>)}</div>
 <div className="permission-card">
 <h3>Permisos por rol</h3>
@@ -1042,6 +1086,7 @@ function EconexoApp() {
     const [editingInventory, setEditingInventory] = useState<InventoryRecord | undefined>();
     const [drawer, setDrawer] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [securityOpen, setSecurityOpen] = useState(false);
     const [notice, setNotice] = useState<Notice | null>(null);
     const title = useMemo(() => navItems.find(n => n.id === view)?.label ?? 'Inventario', [view]);
     const company = PLATFORM_NAME;
@@ -1093,6 +1138,7 @@ function EconexoApp() {
 <p>CUENTA</p>
 <button disabled>
 <UserCog />{isAdmin ? 'Administrador' : 'Empleado'}</button>
+<button onClick={() => { setSecurityOpen(true); setProfileOpen(false); }}><Lock />Cambiar contraseña</button>
 <hr />
 <button onClick={() => void signOut()}>Cerrar sesión</button>
 </div>}</div>
@@ -1102,7 +1148,7 @@ function EconexoApp() {
 <span>{error}</span>
 <button onClick={() => void refresh()}>Reintentar</button>
 </div>}{view === 'dashboard' && isAdmin && <BusinessDashboard />}{view === 'inventarios' && <Inventory onEdit={editInventory} notify={notify}/>} {view === 'facturacion' && isAdmin && <WeightTickets notify={(message, tone) => notify({ message, tone })}/>} {view === 'inventario-form' && <InventoryForm record={editingInventory} onBack={() => go('inventarios')} notify={notify}/>} {view === 'abastecimiento' && <Supply notify={notify}/>} {view === 'clientes' && <Clients notify={notify}/>} {view === 'certificados' && isAdmin && <Certificates/>} {view === 'reportes' && isAdmin && <FinancialReports notify={(message,tone)=>notify({message,tone})}/>} {view === 'configuracion' && isAdmin && <SettingsView notify={notify}/>} {view === 'plataforma' && isPlatformAdmin && <PlatformAdminPanel/>}</div>
-</section><footer className="site-footer">Derechos reservados · Gavrion EcoSystems</footer>{notice && <div className={`toast ${notice.tone === 'error' ? 'toast-error' : ''}`}>
+</section>{securityOpen && <PasswordModal onClose={() => setSecurityOpen(false)} notify={notify}/>}<footer className="site-footer">Derechos reservados · Gavrion EcoSystems</footer>{notice && <div className={`toast ${notice.tone === 'error' ? 'toast-error' : ''}`}>
 <span>{notice.tone === 'error' ? <X /> : <Check />}</span>{notice.message}</div>}{settings?.onboarding_completed === false && <OnboardingWizard onComplete={() => void refresh()} />}</main>;
 }
 export default function Home() { return <EconexoDataProvider>
