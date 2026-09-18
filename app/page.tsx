@@ -8,7 +8,7 @@ import { AddUser, SupplierCategories } from '@/components/admin-settings';
 import { defaultSupplierCategories, supplierCategoryId } from '@/lib/supplier-categories';
 import { CodeSettings } from '@/components/code-settings';
 import { MaterialCatalog } from '@/components/material-catalog';
-import { defaultMaterialGroups, materialGroupId, weightUnitLabel } from '@/lib/material-groups';
+import { defaultMaterialGroups, materialBelongsToGroup, materialGroupId, weightUnitLabel } from '@/lib/material-groups';
 import { FinancialReports } from '@/components/financial-reports';
 import { BusinessDashboard } from '@/components/business-dashboard';
 import { Certificates } from '@/components/certificates';
@@ -87,10 +87,13 @@ function FieldError({ children }: {
 function AccessGate({ children }: {
     children: React.ReactNode;
 }) {
-    const { ready, user, loading, error, signIn } = useEconexoData();
+    const { ready, user, loading, error, signIn, signUp, demoMode } = useEconexoData();
+    const [mode, setMode] = useState<'login' | 'signup'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
     const [localError, setLocalError] = useState('');
+    const [success, setSuccess] = useState('');
     if (!ready)
         return <main className="setup-screen">
 <div className="setup-card">
@@ -101,19 +104,25 @@ function AccessGate({ children }: {
     if (!user)
         return <main className="setup-screen">
 <form className="setup-card login-card" onSubmit={async (e) => { e.preventDefault(); setLocalError(''); try {
-            await signIn(email, password);
+            if (mode === 'signup') {
+                const result = await signUp({ full_name: fullName, email, password });
+                setSuccess(result.needsConfirmation ? 'Cuenta creada. Revisa tu correo para confirmar el acceso.' : 'Cuenta creada. Preparando tu empresa…');
+                if (result.needsConfirmation) setMode('login');
+            } else await signIn(email, password);
         }
         catch (err) {
             setLocalError(err instanceof Error ? err.message : 'No fue posible iniciar sesión');
         } }}>
 <div className="platform-login-logo-frame"><img className="platform-login-logo" src={PLATFORM_LOGO} alt={PLATFORM_NAME}/></div>
 <p className="eyebrow">GAVRION ECOSYSTEMS</p>
-<h1>Iniciar sesión</h1>
-<p>Usa un usuario creado en Supabase Authentication.</p>
+<h1>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1>
+<p>{demoMode ? 'Modo demostración local.' : mode === 'login' ? 'Accede con tu usuario de Supabase Authentication.' : 'Crea tu cuenta y se preparará una empresa SaaS independiente.'}</p>
+{mode === 'signup' && <label>Nombre completo<input type="text" required minLength={2} value={fullName} onChange={e => setFullName(e.target.value)}/></label>}
 <label>Correo electrónico<input type="email" required value={email} onChange={e => setEmail(e.target.value)}/>
 </label>
-<label>Contraseña<input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)}/>
-</label>{(localError || error) && <div className="form-error">{localError || error}</div>}<Button size="lg" type="submit" disabled={loading}>{loading ? 'Ingresando…' : 'Ingresar al sistema'}</Button>
+<label>Contraseña<input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)}/>
+</label>{(localError || error) && <div className="form-error">{localError || error}</div>}{success && <div className="form-success">{success}</div>}<Button size="lg" type="submit" disabled={loading}>{loading ? 'Procesando…' : mode === 'login' ? 'Ingresar al sistema' : 'Crear cuenta'}</Button>
+{!demoMode && <button type="button" className="login-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setLocalError(''); setSuccess(''); }}>{mode === 'login' ? '¿Primera vez? Crear cuenta' : 'Ya tengo una cuenta · Iniciar sesión'}</button>}
 </form>
 </main>;
     return <>{children}</>;
@@ -463,7 +472,7 @@ function InventoryForm({ record, onBack, notify }: {
         <div className="form-grid">
           <label>Categoría principal<select required value={groupId} onChange={e=>{setGroupId(e.target.value);setMaterialId('');setCategoryId('')}}><option value="">Selecciona</option>{groups.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
           <label>Tipo de residuo<select required value={materialId} onChange={e => { setMaterialId(e.target.value); setCategoryId(''); }}>
-<option value="">Selecciona</option>{materials.filter(x => x.active&&(!groupId||materialGroupId(x)===groupId)).map(x => <option value={x.id} key={x.id}>{x.name}</option>)}</select>
+<option value="">Selecciona</option>{materials.filter(x => x.active&&(!groupId||materialBelongsToGroup(x, groups.find(g=>g.id===groupId)??{id:groupId,name:groupId}))).map(x => <option value={x.id} key={x.id}>{x.name}</option>)}{groupId&&!materials.some(x=>x.active&&materialBelongsToGroup(x, groups.find(g=>g.id===groupId)??{id:groupId,name:groupId}))&&<option value="" disabled>No hay tipos de residuo registrados</option>}</select>
 </label>
           <label>Categoría<select required value={categoryId || availableCategories[0]?.id || ''} onChange={e => setCategoryId(e.target.value)}>
 <option value="">Selecciona</option>{availableCategories.map(x => <option value={x.id} key={x.id}>{x.name}</option>)}</select>
