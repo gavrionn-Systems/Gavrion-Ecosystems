@@ -153,6 +153,54 @@ function AccessGate({ children }: {
 {recoveryOpen && <PasswordRecoveryModal onClose={() => setRecoveryOpen(false)}/>}</main>;
     return <>{children}</>;
 }
+function WasteModal({ inventory, onClose, notify }: {
+    inventory: InventoryRecord[];
+    onClose: () => void;
+    notify: (n: Notice) => void;
+}) {
+    const { registerWaste, loading } = useEconexoData();
+    const available = inventory.filter(row => row.status !== 'in_transit' && Number(row.pounds) > 0);
+    const [entryId, setEntryId] = useState(available[0]?.id ?? '');
+    const [quantity, setQuantity] = useState(0);
+    const [unit, setUnit] = useState<'lb' | 'ton'>('lb');
+    const [reason, setReason] = useState('');
+    const [error, setError] = useState('');
+    const selected = available.find(row => row.id === entryId);
+    const submit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setError('');
+        if (!selected || quantity <= 0) {
+            setError('Selecciona un lote y una cantidad válida.');
+            return;
+        }
+        const pounds = unit === 'ton' ? quantity * 2000 : quantity;
+        if (pounds > Number(selected.pounds) + 0.0001) {
+            setError('La merma no puede superar las existencias disponibles.');
+            return;
+        }
+        try {
+            await registerWaste({ entry_id: entryId, quantity, unit, reason });
+            notify({ message: 'Merma registrada e inventario actualizado' });
+            onClose();
+        }
+        catch (reasonValue) {
+            setError(reasonValue instanceof Error ? reasonValue.message : 'No se pudo registrar la merma.');
+        }
+    };
+    return <Modal title="Registrar merma" subtitle="La cantidad se descontará del lote y quedará en la bitácora." onClose={onClose}>
+<form onSubmit={submit}>
+<div className="form-grid">
+<label className="full">Lote de inventario<select required value={entryId} onChange={event => setEntryId(event.target.value)}><option value="">Selecciona</option>{available.map(row => <option value={row.id} key={row.id}>{row.inventory_code} · {row.material} · {row.category} · {number(row.tons)} ton disponibles</option>)}</select></label>
+<label>Cantidad<input required type="number" min="0.0001" step="0.0001" value={quantity || ''} onChange={event => setQuantity(Number(event.target.value))}/></label>
+<label>Unidad<select value={unit} onChange={event => setUnit(event.target.value as 'lb' | 'ton')}><option value="lb">Libras (lb)</option><option value="ton">Toneladas</option></select></label>
+<label className="full">Motivo (opcional)<input value={reason} onChange={event => setReason(event.target.value)} placeholder="Daño, contaminación, humedad…" /></label>
+</div>
+{selected && <p className="chart-note">Existencia disponible: {number(selected.pounds)} lb · {number(selected.tons)} toneladas</p>}
+{error && <div className="form-error">{error}</div>}
+<div className="modal-actions"><Button type="button" variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" disabled={loading || !available.length}>{loading ? 'Guardando…' : 'Registrar merma'}</Button></div>
+</form>
+</Modal>;
+}
 function Inventory({ onEdit, notify }: {
     onEdit: (record?: InventoryRecord) => void;
     notify: (n: Notice) => void;
@@ -164,6 +212,7 @@ function Inventory({ onEdit, notify }: {
     const [deleting, setDeleting] = useState<InventoryRecord | null>(null);
     const [deleteSucceeded, setDeleteSucceeded] = useState(false);
     const [deletingIndex, setDeletingIndex] = useState(0);
+    const [wasteOpen, setWasteOpen] = useState(false);
     const source = [...inventory];
     if (deleting && !source.some(r => r.id === deleting.id))
         source.splice(deletingIndex, 0, deleting);
@@ -173,8 +222,9 @@ function Inventory({ onEdit, notify }: {
     const totalTons = inventoryWithStock.reduce((total, row) => total + Number(row.tons || 0), 0);
     const inventoryValue = inventoryWithStock.reduce((total, row) => total + toCurrency(asNumber(row.cost_total), row.currency ?? 'LPS', settings?.default_currency ?? 'LPS', settings?.usd_to_lps_rate ?? 24.75), 0);
     return <>
-<PageTitle eyebrow="CONTROL DE EXISTENCIAS" title="Inventarios" subtitle="Crea, consulta, edita y elimina registros de residuos." action={<Button size="lg" onClick={() => onEdit()}>
-<Plus />Agregar inventario</Button>}/>
+<PageTitle eyebrow="CONTROL DE EXISTENCIAS" title="Inventarios" subtitle="Crea, consulta, edita y elimina registros de residuos." action={<div className="page-title-actions"><Button variant="outline" size="lg" onClick={() => setWasteOpen(true)}>
+<TrendingDown />Registrar merma</Button><Button size="lg" onClick={() => onEdit()}>
+<Plus />Agregar inventario</Button></div>}/>
 <div className="summary-strip">
 <div>
 <span>Tipo de residuos</span>
@@ -320,7 +370,7 @@ function Inventory({ onEdit, notify }: {
         notify({ message: e instanceof Error ? e.message : 'No se pudo eliminar', tone: 'error' });
     } }}>{loading ? 'Eliminando…' : 'Eliminar'}</Button>
 </div>
-</Modal>}</>;
+</Modal>}{wasteOpen && <WasteModal inventory={inventory} onClose={() => setWasteOpen(false)} notify={notify}/>}</>;
 }
 function LegacyInventoryForm({ record, onBack, notify }: {
     record?: InventoryRecord;
