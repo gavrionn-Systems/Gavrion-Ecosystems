@@ -231,7 +231,7 @@ function Inventory({ onEdit, notify }: {
     onEdit: (record?: InventoryRecord) => void;
     notify: (n: Notice) => void;
 }) {
-    const { inventory, settings, deleteInventory, loading, profiles, user } = useEconexoData();
+    const { inventory, inventoryInitialTons, settings, deleteInventory, loading, profiles, user } = useEconexoData();
     const canManageWaste = profiles.some(profile => profile.id === user?.id && profile.role === 'admin' && profile.active);
     const [query, setQuery] = useState('');
     const [viewing, setViewing] = useState<InventoryRecord | null>(null);
@@ -259,7 +259,7 @@ function Inventory({ onEdit, notify }: {
 </div>
 <div>
 <span>Inventario inicial (T)</span>
-<strong>{number(totalTons)} toneladas</strong>
+<strong>{number(inventoryInitialTons || totalTons)} toneladas</strong>
 </div>
 <div>
 <span>Inventario final (T)</span>
