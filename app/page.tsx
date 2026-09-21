@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bell, Boxes, Building2, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Edit3, Eye, FileBarChart, Filter, LayoutDashboard, LifeBuoy, Lock, Mail, Menu, PackageCheck, Plus, RefreshCw, Search, Settings, ShoppingCart, Trash2, TrendingDown, TrendingUp, Truck, UserCog, UserRound, Users, X, ReceiptText, } from 'lucide-react';
 import { TableRow, TableAction, TableSkeleton, TableEmpty } from '@/components/table-effects';
 import { BillingProvider, BillingView, useBilling } from '@/components/billing';
@@ -259,11 +259,11 @@ function Inventory({ onEdit, notify }: {
 </div>
 <div>
 <span>Inventario inicial (T)</span>
-<strong>{number(inventoryInitialTons || totalTons)} toneladas</strong>
+<strong>{number(inventoryInitialTons || totalTons, 4)} toneladas</strong>
 </div>
 <div>
 <span>Inventario final (T)</span>
-<strong>{number(totalTons)} toneladas</strong>
+<strong>{number(totalTons, 4)} toneladas</strong>
 </div>
 <div>
 <span>Valor de Inventario (L)</span>
@@ -1030,10 +1030,18 @@ function PasswordModal({ onClose, notify }: { onClose: () => void; notify: (n: N
 </form>
 </Modal>;
 }
+const auditEntityLabels: Record<string, string> = { clients: 'Cliente', suppliers: 'Generador de residuo', weight_tickets: 'Boleta de peso', certificates: 'Certificado', reports: 'Reporte' };
+const auditActionLabels: Record<string, string> = { INSERT: 'Agregado', UPDATE: 'Actualizado', DELETE: 'Eliminado' };
+function CompanyActivityAudit({ records, profiles, onRefresh }: { records: import('@/lib/econexo-data').CompanyAuditRecord[]; profiles: ProfileRecord[]; onRefresh: () => void }) {
+    return <>
+<div className="settings-head row"><div><h2>Actividad de la empresa</h2><p>Consulta quién agregó o modificó documentos y registros.</p></div><Button variant="outline" onClick={onRefresh}><RefreshCw />Actualizar</Button></div>
+<div className="company-audit-list">{records.length ? records.map(record => <div className="company-audit-row" key={record.id}><span className="company-audit-icon"><Check /></span><div><strong>{auditActionLabels[record.action] ?? record.action} · {auditEntityLabels[record.table_name] ?? 'Registro'}</strong><small>{profiles.find(profile => profile.id === record.actor_id)?.full_name ?? 'Usuario de la empresa'} · {formatDate(record.created_at.slice(0, 10))}</small></div><code>{record.record_id ? record.record_id.slice(0, 8) : '—'}</code></div>) : <div className="company-audit-empty"><FileBarChart /><span>Aún no hay actividad registrada.</span></div>}</div>
+</>;
+}
 function SettingsView({ notify }: {
     notify: (n: Notice) => void;
 }) {
-    const { settings, materials, categories, profiles, saveSettings, uploadCompanyLogo, toggleMaterial, toggleCategory, saveProfile, loading } = useEconexoData();
+    const { settings, materials, categories, profiles, companyAudit, refreshCompanyAudit, saveSettings, uploadCompanyLogo, toggleMaterial, toggleCategory, saveProfile, loading } = useEconexoData();
     const [tab, setTab] = useState('Empresa');
     const [name, setName] = useState(settings?.name ?? 'Gavrion EcoSystems');
     const [logo, setLogo] = useState(settings?.logo_url ?? '');
@@ -1048,6 +1056,7 @@ function SettingsView({ notify }: {
         item?: MaterialRecord | CategoryRecord;
     } | null>(null);
     const [error, setError] = useState('');
+    useEffect(() => { if (tab === 'Actividad') void refreshCompanyAudit(); }, [tab, refreshCompanyAudit]);
     const resetPassword = async (profile: ProfileRecord) => {
       const temporary = window.prompt(`Nueva contraseña temporal para ${profile.username || profile.full_name} (mínimo 12 caracteres):`);
       if (temporary === null) return;
@@ -1070,7 +1079,7 @@ function SettingsView({ notify }: {
     return <>
 <PageTitle eyebrow="ADMINISTRACIÓN" title="Configuración" subtitle="Cambios persistentes para empresa, usuarios y catálogo."/>
 <div className="settings-layout">
-<aside className="settings-nav">{['Empresa', 'Usuarios', 'Agregar usuarios', 'Categorías de proveedores', 'Materiales y categorías', 'Códigos'].map(t => <button aria-label={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)} key={t}>{t === 'Empresa' ? <Building2 /> : t === 'Usuarios' ? <UserCog /> : <Boxes />}<span>{t}</span>
+<aside className="settings-nav">{['Empresa', 'Usuarios', 'Agregar usuarios', 'Categorías de proveedores', 'Materiales y categorías', 'Códigos', 'Actividad'].map(t => <button aria-label={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)} key={t}>{t === 'Empresa' ? <Building2 /> : t === 'Usuarios' ? <UserCog /> : t === 'Actividad' ? <FileBarChart /> : <Boxes />}<span>{t}</span>
 </button>)}</aside>
 <section className="panel settings-content">{tab === 'Agregar usuarios' && <AddUser/>}{tab === 'Categorías de proveedores' && <SupplierCategories/>}{tab === 'Empresa' && <>
 <div className="settings-head">
@@ -1151,13 +1160,27 @@ function SettingsView({ notify }: {
 <p>Inventarios, generadores de residuos y clientes; sin información financiera global.</p>
 </div>
 </div>
-</>}{tab === 'Códigos' && <CodeSettings/>}{tab === 'Materiales y categorías' && <MaterialCatalog notify={(message,tone)=>notify({message,tone})}/>}</section>
+</>}{tab === 'Códigos' && <CodeSettings/>}{tab === 'Materiales y categorías' && <MaterialCatalog notify={(message,tone)=>notify({message,tone})}/>} {tab === 'Actividad' && <CompanyActivityAudit records={companyAudit} profiles={profiles} onRefresh={() => void refreshCompanyAudit()}/>}</section>
 </div>{catalog && <CatalogEditor kind={catalog.kind} item={catalog.item?.id ? catalog.item : undefined} onClose={() => setCatalog(null)} notify={notify}/>}</>;
+}
+function notificationCopy(item: NotificationRecord) {
+    const source = `${item.title} ${item.message}`.toLowerCase();
+    const action = item.message.toLowerCase().includes('elimin') ? 'eliminó' : item.message.toLowerCase().includes('actualiz') ? 'actualizó' : 'registró';
+    if (source.includes('weight tickets') || source.includes('weight_tickets') || source.includes('boleta')) {
+        return { title: item.message.toLowerCase().includes('elimin') ? 'Boleta de peso eliminada' : 'Boleta de peso registrada', message: item.message.toLowerCase().includes('elimin') ? 'Se eliminó una boleta de peso.' : 'Se emitió una nueva boleta de peso.' };
+    }
+    if (source.includes('inventory movements') || source.includes('inventory_movements') || source.includes('movimiento')) {
+        return { title: 'Movimiento de inventario', message: `Se ${action} un movimiento de existencias.` };
+    }
+    if (source.includes('inventory entries') || source.includes('inventory_entries') || source.includes('inventario')) {
+        return { title: item.message.toLowerCase().includes('elimin') ? 'Inventario eliminado' : 'Inventario actualizado', message: `Se ${action} un lote de residuo en el inventario.` };
+    }
+    return { title: item.title, message: item.message };
 }
 function NotificationPopover({ items, onReadAll }: { items: NotificationRecord[]; onReadAll: () => void }) {
     return <div className="notification-popover" role="dialog" aria-label="Notificaciones">
 <div className="notification-popover-head"><div><strong>Notificaciones</strong><small>Actividad reciente de tu empresa</small></div>{items.some(item => !item.read_at) && <button onClick={onReadAll}>Marcar como leídas</button>}</div>
-{items.length ? <div className="notification-list">{items.slice(0, 12).map(item => <article className={item.read_at ? '' : 'unread'} key={item.id}><span className={`notification-dot ${item.type}`} /><div><strong>{item.title}</strong><p>{item.message}</p><small>{formatDate(item.created_at.slice(0, 10))}</small></div></article>)}</div> : <div className="notification-empty"><Bell /><span>No hay notificaciones nuevas.</span></div>}
+{items.length ? <div className="notification-list">{items.slice(0, 12).map(item => { const copy = notificationCopy(item); return <article className={item.read_at ? '' : 'unread'} key={item.id}><span className={`notification-dot ${item.type}`} /><div><strong>{copy.title}</strong><p>{copy.message}</p><small>{formatDate(item.created_at.slice(0, 10))}</small></div></article>; })}</div> : <div className="notification-empty"><Bell /><span>No hay notificaciones nuevas.</span></div>}
 </div>;
 }
 function EconexoApp() {
