@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { Bell, Boxes, Building2, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Edit3, Eye, FileBarChart, Filter, LayoutDashboard, Lock, Mail, Menu, PackageCheck, Plus, RefreshCw, Search, Settings, ShoppingCart, Trash2, TrendingDown, TrendingUp, Truck, UserCog, UserRound, Users, X, ReceiptText, } from 'lucide-react';
+import { Bell, Boxes, Building2, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Edit3, Eye, FileBarChart, Filter, LayoutDashboard, LifeBuoy, Lock, Mail, Menu, PackageCheck, Plus, RefreshCw, Search, Settings, ShoppingCart, Trash2, TrendingDown, TrendingUp, Truck, UserCog, UserRound, Users, X, ReceiptText, } from 'lucide-react';
 import { TableRow, TableAction, TableSkeleton, TableEmpty } from '@/components/table-effects';
 import { BillingProvider, BillingView, useBilling } from '@/components/billing';
 import { supplierDisplayId, clientDisplayId } from '@/lib/party-codes';
@@ -17,7 +17,7 @@ import { Certificates } from '@/components/certificates';
 import { WeightTickets } from '@/components/weight-tickets';
 import { Button } from '@/components/ui/button';
 import { AnimatedValue, RefreshButton, NotificationBell, MobileDrawer } from '@/components/motion';
-import { EconexoDataProvider, useEconexoData, type AccessStatus, type CategoryRecord, type ClientRecord, type InventoryRecord, type MaterialRecord, type NotificationRecord, type ProfileRecord, type SupplierRecord, } from '@/lib/econexo-data';
+import { EconexoDataProvider, useEconexoData, type AccessStatus, type CategoryRecord, type ClientRecord, type InventoryRecord, type MaterialRecord, type NotificationRecord, type ProfileRecord, type SupportTicket, type SupplierRecord, } from '@/lib/econexo-data';
 type View = 'certificados' | 'dashboard' | 'inventarios' | 'inventario-form' | 'facturacion' | 'abastecimiento' | 'clientes' | 'reportes' | 'configuracion' | 'plataforma';
 const PLATFORM_NAME = 'Gavrion EcoSystems';
 const PLATFORM_LOGO = '/gavrion-ecosystems-logo.png';
@@ -107,13 +107,16 @@ function PasswordRecoveryModal({ onClose }: { onClose: () => void }) {
 function AccessPendingScreen({ status, onRefresh, onSignOut }: { status: AccessStatus; onRefresh: () => void; onSignOut: () => void }) {
     const rejected = status.status === 'rejected';
     const suspended = status.status === 'suspended';
-    const title = rejected ? 'Solicitud no aprobada' : suspended ? 'Acceso suspendido' : 'Solicitud en revisión';
+    const deleted = status.status === 'deleted';
+    const title = rejected ? 'Solicitud no aprobada' : suspended ? 'Acceso suspendido' : deleted ? 'Empresa en papelera' : 'Solicitud en revisión';
     const message = rejected
         ? (status.rejection_reason || 'El propietario de la plataforma no aprobó esta solicitud.')
         : suspended
             ? 'El acceso de esta empresa está temporalmente suspendido. Contacta al administrador de la plataforma.'
-            : 'Tu cuenta fue creada correctamente. El administrador de Gavrion EcoSystems debe aprobar la empresa antes de habilitar el acceso.';
-    return <main className="access-gate-screen"><section className="access-gate-card" role="status"><div className={`access-gate-icon ${rejected || suspended ? 'warning' : ''}`}><Building2 /></div><p className="eyebrow">GAVRION ECOSYSTEMS</p><h1>{title}</h1><p>{message}</p>{status.organization_name && <div className="access-gate-company"><small>Empresa solicitante</small><strong>{status.organization_name}</strong></div>}<div className="access-gate-actions"><Button onClick={onRefresh}><RefreshCw />Actualizar estado</Button><Button variant="outline" onClick={onSignOut}>Cerrar sesión</Button></div></section></main>;
+            : deleted
+                ? 'El acceso está deshabilitado porque esta empresa fue enviada a la papelera. Contacta al administrador de la plataforma para restaurarla.'
+                : 'Tu cuenta fue creada correctamente. El administrador de Gavrion EcoSystems debe aprobar la empresa antes de habilitar el acceso.';
+    return <main className="access-gate-screen"><section className="access-gate-card" role="status"><div className={`access-gate-icon ${rejected || suspended || deleted ? 'warning' : ''}`}><Building2 /></div><p className="eyebrow">GAVRION ECOSYSTEMS</p><h1>{title}</h1><p>{message}</p>{status.organization_name && <div className="access-gate-company"><small>Empresa solicitante</small><strong>{status.organization_name}</strong></div>}<div className="access-gate-actions"><Button onClick={onRefresh}><RefreshCw />Actualizar estado</Button><Button variant="outline" onClick={onSignOut}>Cerrar sesión</Button></div></section></main>;
 }
 function AccessGate({ children }: {
     children: React.ReactNode;
@@ -164,6 +167,17 @@ function AccessGate({ children }: {
 {recoveryOpen && <PasswordRecoveryModal onClose={() => setRecoveryOpen(false)}/>}</main>;
     if (accessStatus && !accessStatus.platform_admin && accessStatus.status !== 'active') return <AccessPendingScreen status={accessStatus} onRefresh={() => void refresh()} onSignOut={() => void signOut()} />;
     return <>{children}</>;
+}
+function SupportModal({ onClose, notify }: { onClose: () => void; notify: (n: Notice) => void }) {
+    const { submitSupportTicket, loading } = useEconexoData();
+    const [subject, setSubject] = useState('');
+    const [message, setMessage] = useState('');
+    const [priority, setPriority] = useState<SupportTicket['priority']>('normal');
+    const [error, setError] = useState('');
+    const submit = async (event: React.FormEvent) => { event.preventDefault(); setError(''); try { await submitSupportTicket({ subject, message, priority }); notify({ message: 'Solicitud enviada a soporte' }); onClose(); } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo enviar la solicitud.'); } };
+    return <Modal title="Contactar soporte" subtitle="Envíanos tu consulta y el equipo de Gavrion EcoSystems la revisará." onClose={onClose}>
+<form onSubmit={submit}><div className="form-grid"><label className="full">Asunto<input required minLength={3} maxLength={160} value={subject} onChange={event => setSubject(event.target.value)} placeholder="Ej. No puedo emitir una boleta" /></label><label>Prioridad<select value={priority} onChange={event => setPriority(event.target.value as SupportTicket['priority'])}><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></label><label className="full">Mensaje<textarea required minLength={10} maxLength={5000} value={message} onChange={event => setMessage(event.target.value)} placeholder="Describe lo que necesitas resolver…" /></label></div>{error && <div className="form-error">{error}</div>}<div className="modal-actions"><Button type="button" variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" disabled={loading}>{loading ? 'Enviando…' : 'Enviar solicitud'}</Button></div></form>
+</Modal>;
 }
 function WasteModal({ inventory, onClose, notify }: {
     inventory: InventoryRecord[];
@@ -1156,6 +1170,7 @@ function EconexoApp() {
     const [drawer, setDrawer] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [supportOpen, setSupportOpen] = useState(false);
     const [securityOpen, setSecurityOpen] = useState(false);
     const [notice, setNotice] = useState<Notice | null>(null);
     const title = useMemo(() => navItems.find(n => n.id === view)?.label ?? 'Inventario', [view]);
@@ -1165,19 +1180,24 @@ function EconexoApp() {
         return; if (id === 'plataforma' && !isPlatformAdmin)
         return; setView(id); setDrawer(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     const editInventory = (record?: InventoryRecord) => { setEditingInventory(record); go('inventario-form'); };
+    const moduleForNav: Record<string, string> = { dashboard: 'dashboard', inventarios: 'inventory', facturacion: 'weight_tickets', certificados: 'certificates', abastecimiento: 'suppliers', clientes: 'clients', reportes: 'reports' };
+    const moduleEnabled = (id: string) => settings?.enabled_modules?.[moduleForNav[id] ?? id] !== false;
     const nav = <>
 <div className="brand platform-brand"><div className="platform-logo-frame"><img className="platform-logo" src={PLATFORM_LOGO} alt={company}/></div><strong className="platform-brand-name">{company}</strong><small>Sistema empresarial</small>
 </div>
-<nav>{navItems.filter(n => (isAdmin || !n.admin) && (!('platformOnly' in n) || !n.platformOnly || isPlatformAdmin)).map(({ id, label, icon: Icon }) => <button className={(view === id || (view === 'inventario-form' && id === 'inventarios')) ? 'nav-item active' : 'nav-item'} key={id} onClick={() => go(id)}>
+<nav>{navItems.filter(n => (isAdmin || !n.admin) && moduleEnabled(n.id) && (!('platformOnly' in n) || !n.platformOnly || isPlatformAdmin)).map(({ id, label, icon: Icon }) => <button className={(view === id || (view === 'inventario-form' && id === 'inventarios')) ? 'nav-item active' : 'nav-item'} key={id} onClick={() => go(id)}>
 <Icon />
 <span>{label}</span>
 </button>)}</nav>
 <div className="sidebar-foot">
+<div className="sidebar-safe">
 <PackageCheck />
 <span>
 <strong>Operación segura</strong>
 <small>{loading ? 'Cargando información…' : 'Sistema listo'}</small>
 </span>
+</div>
+<button type="button" className="sidebar-support-button" onClick={() => setSupportOpen(true)}><LifeBuoy /><span><strong>Soporte</strong><small>Contactar plataforma</small></span></button>
 </div>
 </>;
     return <main className="app-shell">
@@ -1218,7 +1238,7 @@ function EconexoApp() {
 <span>{error}</span>
 <button onClick={() => void refresh()}>Reintentar</button>
 </div>}{view === 'dashboard' && isAdmin && <BusinessDashboard />}{view === 'inventarios' && <Inventory onEdit={editInventory} notify={notify}/>} {view === 'facturacion' && isAdmin && <WeightTickets notify={(message, tone) => notify({ message, tone })}/>} {view === 'inventario-form' && <InventoryForm record={editingInventory} onBack={() => go('inventarios')} notify={notify}/>} {view === 'abastecimiento' && <Supply notify={notify}/>} {view === 'clientes' && <Clients notify={notify}/>} {view === 'certificados' && isAdmin && <Certificates/>} {view === 'reportes' && isAdmin && <FinancialReports notify={(message,tone)=>notify({message,tone})}/>} {view === 'configuracion' && isAdmin && <SettingsView notify={notify}/>} {view === 'plataforma' && isPlatformAdmin && <PlatformAdminPanel/>}</div>
-</section>{securityOpen && <PasswordModal onClose={() => setSecurityOpen(false)} notify={notify}/>}<footer className="site-footer">Derechos reservados · Gavrion EcoSystems</footer>{notice && <div className={`toast ${notice.tone === 'error' ? 'toast-error' : ''}`}>
+</section>{securityOpen && <PasswordModal onClose={() => setSecurityOpen(false)} notify={notify}/>} {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} notify={notify}/>}<footer className="site-footer">Derechos reservados · Gavrion EcoSystems</footer>{notice && <div className={`toast ${notice.tone === 'error' ? 'toast-error' : ''}`}>
 <span>{notice.tone === 'error' ? <X /> : <Check />}</span>{notice.message}</div>}{settings?.onboarding_completed === false && <OnboardingWizard onComplete={() => void refresh()} />}</main>;
 }
 export default function Home() { return <EconexoDataProvider>
