@@ -28,8 +28,8 @@ type Notice = {
 const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true },
     { id: 'inventarios', label: 'Inventario', icon: Boxes, admin: false },
-    { id: 'facturacion', label: 'Boleta de peso', icon: ReceiptText, admin: true },
-    { id: 'certificados', label: 'Certificado', icon: ClipboardList, admin: true },
+    { id: 'facturacion', label: 'Boleta de peso', icon: ReceiptText, admin: false },
+    { id: 'certificados', label: 'Certificado', icon: ClipboardList, admin: false },
     { id: 'abastecimiento', label: 'Generador de residuo', icon: Truck, admin: false },
     { id: 'clientes', label: 'Cliente', icon: Users, admin: false },
     { id: 'reportes', label: 'Reportería', icon: FileBarChart, admin: true },
@@ -1127,7 +1127,7 @@ function SettingsView({ notify }: {
         notify({ message: err instanceof Error ? err.message : 'No se pudo actualizar', tone: 'error' });
     } }}>
 <option value="admin">Administrador</option>
-<option value="employee">Empleado</option>
+<option value="employee">Vendedor</option>
 </select>
 <label className="toggle">
 <input type="checkbox" checked={p.active} onChange={async (e) => { try {
@@ -1147,7 +1147,7 @@ function SettingsView({ notify }: {
 <p>Dashboard, finanzas, reportes, usuarios y configuración.</p>
 </div>
 <div>
-<strong>Empleado</strong>
+<strong>Vendedor</strong>
 <p>Inventarios, generadores de residuos y clientes; sin información financiera global.</p>
 </div>
 </div>
@@ -1176,7 +1176,7 @@ function EconexoApp() {
     const title = useMemo(() => navItems.find(n => n.id === view)?.label ?? 'Inventario', [view]);
     const company = PLATFORM_NAME;
     const notify = (next: Notice) => { setNotice(next); window.setTimeout(() => setNotice(null), 3000); };
-    const go = (id: View) => { if (!isAdmin && ['dashboard', 'facturacion', 'certificados', 'reportes', 'configuracion', 'plataforma'].includes(id))
+    const go = (id: View) => { if (!isAdmin && ['dashboard', 'reportes', 'configuracion', 'plataforma'].includes(id))
         return; if (id === 'plataforma' && !isPlatformAdmin)
         return; setView(id); setDrawer(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     const editInventory = (record?: InventoryRecord) => { setEditingInventory(record); go('inventario-form'); };
@@ -1221,13 +1221,13 @@ function EconexoApp() {
 <span className="avatar">{initials(profile?.full_name ?? user?.email ?? 'Usuario')}</span>
 <div>
 <strong>{profile?.full_name ?? user?.email}</strong>
-<small>{isAdmin ? 'Administrador' : 'Empleado'}</small>
+<small>{isAdmin ? 'Administrador' : 'Vendedor'}</small>
 </div>
 <ChevronDown />
 </button>{profileOpen && <div className="profile-menu">
 <p>CUENTA</p>
 <button disabled>
-<UserCog />{isAdmin ? 'Administrador' : 'Empleado'}</button>
+<UserCog />{isAdmin ? 'Administrador' : 'Vendedor'}</button>
 <button onClick={() => { setSecurityOpen(true); setProfileOpen(false); }}><Lock />Cambiar contraseña</button>
 <hr />
 <button onClick={() => void signOut()}>Cerrar sesión</button>
@@ -1237,7 +1237,7 @@ function EconexoApp() {
 <strong>Error de sincronización</strong>
 <span>{error}</span>
 <button onClick={() => void refresh()}>Reintentar</button>
-</div>}{view === 'dashboard' && isAdmin && <BusinessDashboard />}{view === 'inventarios' && <Inventory onEdit={editInventory} notify={notify}/>} {view === 'facturacion' && isAdmin && <WeightTickets notify={(message, tone) => notify({ message, tone })}/>} {view === 'inventario-form' && <InventoryForm record={editingInventory} onBack={() => go('inventarios')} notify={notify}/>} {view === 'abastecimiento' && <Supply notify={notify}/>} {view === 'clientes' && <Clients notify={notify}/>} {view === 'certificados' && isAdmin && <Certificates/>} {view === 'reportes' && isAdmin && <FinancialReports notify={(message,tone)=>notify({message,tone})}/>} {view === 'configuracion' && isAdmin && <SettingsView notify={notify}/>} {view === 'plataforma' && isPlatformAdmin && <PlatformAdminPanel/>}</div>
+</div>}{view === 'dashboard' && isAdmin && <BusinessDashboard />}{view === 'inventarios' && <Inventory onEdit={editInventory} notify={notify}/>} {view === 'facturacion' && <WeightTickets notify={(message, tone) => notify({ message, tone })}/>} {view === 'inventario-form' && <InventoryForm record={editingInventory} onBack={() => go('inventarios')} notify={notify}/>} {view === 'abastecimiento' && <Supply notify={notify}/>} {view === 'clientes' && <Clients notify={notify}/>} {view === 'certificados' && <Certificates/>} {view === 'reportes' && isAdmin && <FinancialReports notify={(message,tone)=>notify({message,tone})}/>} {view === 'configuracion' && isAdmin && <SettingsView notify={notify}/>} {view === 'plataforma' && isPlatformAdmin && <PlatformAdminPanel/>}</div>
 </section>{securityOpen && <PasswordModal onClose={() => setSecurityOpen(false)} notify={notify}/>} {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} notify={notify}/>}<footer className="site-footer">Derechos reservados · Gavrion EcoSystems</footer>{notice && <div className={`toast ${notice.tone === 'error' ? 'toast-error' : ''}`}>
 <span>{notice.tone === 'error' ? <X /> : <Check />}</span>{notice.message}</div>}{settings?.onboarding_completed === false && <OnboardingWizard onComplete={() => void refresh()} />}</main>;
 }
