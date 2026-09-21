@@ -17,7 +17,7 @@ import { Certificates } from '@/components/certificates';
 import { WeightTickets } from '@/components/weight-tickets';
 import { Button } from '@/components/ui/button';
 import { AnimatedValue, RefreshButton, NotificationBell, MobileDrawer } from '@/components/motion';
-import { EconexoDataProvider, useEconexoData, type CategoryRecord, type ClientRecord, type InventoryRecord, type MaterialRecord, type ProfileRecord, type SupplierRecord, } from '@/lib/econexo-data';
+import { EconexoDataProvider, useEconexoData, type AccessStatus, type CategoryRecord, type ClientRecord, type InventoryRecord, type MaterialRecord, type NotificationRecord, type ProfileRecord, type SupplierRecord, } from '@/lib/econexo-data';
 type View = 'certificados' | 'dashboard' | 'inventarios' | 'inventario-form' | 'facturacion' | 'abastecimiento' | 'clientes' | 'reportes' | 'configuracion' | 'plataforma';
 const PLATFORM_NAME = 'Gavrion EcoSystems';
 const PLATFORM_LOGO = '/gavrion-ecosystems-logo.png';
@@ -104,10 +104,21 @@ function PasswordRecoveryModal({ onClose }: { onClose: () => void }) {
 <div className="modal-actions"><Button type="button" variant="outline" onClick={onClose}>Cerrar</Button><Button type="submit" disabled={loading}>{loading ? 'Enviando…' : 'Enviar enlace'}</Button></div></form>
 </Modal>;
 }
+function AccessPendingScreen({ status, onRefresh, onSignOut }: { status: AccessStatus; onRefresh: () => void; onSignOut: () => void }) {
+    const rejected = status.status === 'rejected';
+    const suspended = status.status === 'suspended';
+    const title = rejected ? 'Solicitud no aprobada' : suspended ? 'Acceso suspendido' : 'Solicitud en revisión';
+    const message = rejected
+        ? (status.rejection_reason || 'El propietario de la plataforma no aprobó esta solicitud.')
+        : suspended
+            ? 'El acceso de esta empresa está temporalmente suspendido. Contacta al administrador de la plataforma.'
+            : 'Tu cuenta fue creada correctamente. El administrador de Gavrion EcoSystems debe aprobar la empresa antes de habilitar el acceso.';
+    return <main className="access-gate-screen"><section className="access-gate-card" role="status"><div className={`access-gate-icon ${rejected || suspended ? 'warning' : ''}`}><Building2 /></div><p className="eyebrow">GAVRION ECOSYSTEMS</p><h1>{title}</h1><p>{message}</p>{status.organization_name && <div className="access-gate-company"><small>Empresa solicitante</small><strong>{status.organization_name}</strong></div>}<div className="access-gate-actions"><Button onClick={onRefresh}><RefreshCw />Actualizar estado</Button><Button variant="outline" onClick={onSignOut}>Cerrar sesión</Button></div></section></main>;
+}
 function AccessGate({ children }: {
     children: React.ReactNode;
 }) {
-    const { ready, user, loading, error, signIn, signUp, demoMode } = useEconexoData();
+    const { ready, user, loading, error, accessStatus, refresh, signOut, signIn, signUp, demoMode } = useEconexoData();
     const [mode, setMode] = useState<'login' | 'signup'>('login');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -129,7 +140,7 @@ function AccessGate({ children }: {
 <form className="setup-card login-card" onSubmit={async (e) => { e.preventDefault(); setLocalError(''); try {
             if (mode === 'signup') {
                 const result = await signUp({ full_name: fullName, username, email, password, company_name: companyName });
-                setSuccess(result.needsConfirmation ? 'Cuenta creada. Revisa tu correo para confirmar el acceso.' : 'Cuenta creada. Preparando tu empresa…');
+                setSuccess(result.needsConfirmation ? 'Cuenta creada. Revisa tu correo. Después de confirmarlo, tu empresa quedará pendiente de aprobación.' : 'Solicitud recibida. El administrador debe aprobar tu empresa antes de habilitar el acceso.');
                 if (result.needsConfirmation) setMode('login');
             } else await signIn(username, password);
         }
@@ -151,6 +162,7 @@ function AccessGate({ children }: {
 {!demoMode && <button type="button" className="login-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setLocalError(''); setSuccess(''); }}>{mode === 'login' ? '¿Primera vez? Crear cuenta' : 'Ya tengo una cuenta · Iniciar sesión'}</button>}
 </form>
 {recoveryOpen && <PasswordRecoveryModal onClose={() => setRecoveryOpen(false)}/>}</main>;
+    if (accessStatus && !accessStatus.platform_admin && accessStatus.status !== 'active') return <AccessPendingScreen status={accessStatus} onRefresh={() => void refresh()} onSignOut={() => void signOut()} />;
     return <>{children}</>;
 }
 function WasteModal({ inventory, onClose, notify }: {
@@ -1128,8 +1140,14 @@ function SettingsView({ notify }: {
 </>}{tab === 'Códigos' && <CodeSettings/>}{tab === 'Materiales y categorías' && <MaterialCatalog notify={(message,tone)=>notify({message,tone})}/>}</section>
 </div>{catalog && <CatalogEditor kind={catalog.kind} item={catalog.item?.id ? catalog.item : undefined} onClose={() => setCatalog(null)} notify={notify}/>}</>;
 }
+function NotificationPopover({ items, onReadAll }: { items: NotificationRecord[]; onReadAll: () => void }) {
+    return <div className="notification-popover" role="dialog" aria-label="Notificaciones">
+<div className="notification-popover-head"><div><strong>Notificaciones</strong><small>Actividad reciente de tu empresa</small></div>{items.some(item => !item.read_at) && <button onClick={onReadAll}>Marcar como leídas</button>}</div>
+{items.length ? <div className="notification-list">{items.slice(0, 12).map(item => <article className={item.read_at ? '' : 'unread'} key={item.id}><span className={`notification-dot ${item.type}`} /><div><strong>{item.title}</strong><p>{item.message}</p><small>{formatDate(item.created_at.slice(0, 10))}</small></div></article>)}</div> : <div className="notification-empty"><Bell /><span>No hay notificaciones nuevas.</span></div>}
+</div>;
+}
 function EconexoApp() {
-    const { user, profiles, settings, error, loading, refresh, signOut, platformOrganizations } = useEconexoData();
+    const { user, profiles, settings, error, loading, refresh, signOut, platformOrganizations, notifications, unreadNotifications, markNotificationsRead } = useEconexoData();
     const profile = profiles.find(x => x.id === user?.id);
     const isAdmin = profile?.role === 'admin';
     const isPlatformAdmin = platformOrganizations.length > 0;
@@ -1137,6 +1155,7 @@ function EconexoApp() {
     const [editingInventory, setEditingInventory] = useState<InventoryRecord | undefined>();
     const [drawer, setDrawer] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [securityOpen, setSecurityOpen] = useState(false);
     const [notice, setNotice] = useState<Notice | null>(null);
     const title = useMemo(() => navItems.find(n => n.id === view)?.label ?? 'Inventario', [view]);
@@ -1176,7 +1195,7 @@ function EconexoApp() {
 </span>
 <div className="topbar-spacer"/>
 <RefreshButton refresh={refresh}/>
-<NotificationBell count={0} onClick={() => notify({ message: 'No hay notificaciones nuevas' })}/>
+<div className="notification-wrap"><NotificationBell count={unreadNotifications} onClick={() => setNotificationsOpen(open => !open)}/>{notificationsOpen && <NotificationPopover items={notifications} onReadAll={() => void markNotificationsRead().catch(reason => notify({ message: reason instanceof Error ? reason.message : 'No se pudieron actualizar las notificaciones', tone: 'error' }))}/>}</div>
 <div className="profile-wrap">
 <button className="profile" onClick={() => setProfileOpen(!profileOpen)}>
 <span className="avatar">{initials(profile?.full_name ?? user?.email ?? 'Usuario')}</span>
