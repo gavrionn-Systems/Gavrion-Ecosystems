@@ -14,7 +14,7 @@ import {executiveSections,type ExecutiveSection} from '@/lib/executive-report-da
 import {downloadReport,reportCsv,reportXlsx,type Cell} from '@/lib/report-export';
 
 export function FinancialReports({notify}:{notify:(message:string,tone?:'success'|'error')=>void}){
- const {inventory,suppliers,materials,settings}=useEconexoData(),{movements,loading,error}=useBusinessMovements();
+ const {inventory,suppliers,materials,settings,recordDocumentActivity}=useEconexoData(),{movements,loading,error}=useBusinessMovements();
  const initial=periodBounds('Mensual'),[from,setFrom]=useState(initial.start),[to,setTo]=useState(initial.end),[supplier,setSupplier]=useState('');
  const [currency,setCurrency]=useState<'LPS'|'USD'>(settings?.default_currency??'LPS'),[unit,setUnit]=useState<'lb'|'ton'>('ton');
  const [category,setCategory]=useState(''),[material,setMaterial]=useState(''),[stock,setStock]=useState<'all'|'positive'|'empty'>('all');
@@ -36,6 +36,7 @@ export function FinancialReports({notify}:{notify:(message:string,tone?:'success
   if(!ready||exporting)return;setExporting(section.id);
   try{
    const snap=snapshot(section),detail:Cell[][]=[section.headers,...section.rows,...(section.total?[section.total]:[])];
+   await recordDocumentActivity('report').catch(()=>undefined);
    const executive:Cell[][]=[['Resumen ejecutivo',section.title],['Empresa',snap.company],['Generado',snap.generated],...metadata,['Indicador','Valor','Unidad'],...section.metrics.map(m=>[m.label,m.value,m.unit]),['Notas',note]];
    const filename='reporte-'+section.id+'-'+(from||'inicio')+'-'+(to||'hoy');
    if(format==='xlsx')downloadReport(reportXlsx([{name:'Resumen ejecutivo',rows:executive},{name:'Detalle',rows:detail}]).buffer as ArrayBuffer,filename+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
