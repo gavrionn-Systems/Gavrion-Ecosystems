@@ -1218,13 +1218,6 @@ function EconexoApp() {
 <span>{label}</span>
 </button>)}</nav>
 <div className="sidebar-foot">
-<div className="sidebar-safe">
-<PackageCheck />
-<span>
-<strong>Operación segura</strong>
-<small>{loading ? 'Cargando información…' : 'Sistema listo'}</small>
-</span>
-</div>
 <button type="button" className="sidebar-support-button" onClick={() => setSupportOpen(true)}><LifeBuoy /><span><strong>Soporte</strong><small>Contactar plataforma</small></span></button>
 </div>
 </>;
