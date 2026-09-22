@@ -32,7 +32,7 @@ export function BusinessDashboard(){
   const kpis=[
     {label:'Toneladas compradas',value:weight(summary.purchased),unit:unitLabel,note:period,icon:ShoppingCart,tone:'violet'},
     {label:'Toneladas vendidas',value:weight(summary.sold),unit:unitLabel,note:period,icon:TrendingUp,tone:'cyan'},
-    {label:'Toneladas merma',value:weight(summary.waste),unit:unitLabel,note:'Desviación del peso',icon:TrendingDown,tone:'blue'},
+    {label:'Toneladas merma',value:weight(summary.waste),unit:unitLabel,note:period,icon:TrendingDown,tone:'blue'},
     {label:'Toneladas stock',value:weight(stock),unit:unitLabel,note:'Existencias actuales',icon:Boxes,tone:'mint'},
     {label:'Compras del período',value:money(summary.purchaseTotal),unit:'Lempiras',note:period,icon:ShoppingCart,tone:'sky'},
     {label:'Ventas del período',value:money(summary.saleTotal),unit:'Lempiras · total valorizado',note:period,icon:CircleDollarSign,tone:'pink'},
