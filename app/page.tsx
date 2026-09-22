@@ -166,6 +166,8 @@ function AccessGate({ children }: {
 {!demoMode && <button type="button" className="login-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setLocalError(''); setSuccess(''); }}>{mode === 'login' ? '¿Primera vez? Crear cuenta' : 'Ya tengo una cuenta · Iniciar sesión'}</button>}
 </form>
 {recoveryOpen && <PasswordRecoveryModal onClose={() => setRecoveryOpen(false)}/>}</main>;
+    if (!demoMode && (loading || !accessStatus))
+        return <main className="setup-screen"><div className="setup-card"><div className="loader"/><p>Preparando tus permisos…</p></div></main>;
     if (accessStatus && !accessStatus.platform_admin && !accessStatus.platform_executive && accessStatus.status !== 'active') return <AccessPendingScreen status={accessStatus} onRefresh={() => void refresh()} onSignOut={() => void signOut()} />;
     return <>{children}</>;
 }
@@ -175,7 +177,7 @@ function SupportModal({ onClose, notify }: { onClose: () => void; notify: (n: No
     const [message, setMessage] = useState('');
     const [priority, setPriority] = useState<SupportTicket['priority']>('normal');
     const [error, setError] = useState('');
-    const submit = async (event: React.FormEvent) => { event.preventDefault(); setError(''); try { await submitSupportTicket({ subject, message, priority }); notify({ message: 'Solicitud enviada a soporte' }); onClose(); } catch (reason) { setError(reason instanceof Error ? reason.message : 'No se pudo enviar la solicitud.'); } };
+    const submit = async (event: React.FormEvent) => { event.preventDefault(); setError(''); try { await submitSupportTicket({ subject, message, priority }); notify({ message: 'Solicitud enviada a soporte' }); onClose(); } catch (reason) { const detail = reason && typeof reason === 'object' && 'message' in reason ? String((reason as { message?: unknown }).message ?? '') : ''; setError(detail || (reason instanceof Error ? reason.message : 'No se pudo enviar la solicitud.')); } };
     return <Modal title="Contactar soporte" subtitle="Envíanos tu consulta y el equipo de Gavrion EcoSystems la revisará." onClose={onClose}>
 <form onSubmit={submit}><div className="form-grid"><label className="full">Asunto<input required minLength={3} maxLength={160} value={subject} onChange={event => setSubject(event.target.value)} placeholder="Ej. No puedo emitir una boleta" /></label><label>Prioridad<select value={priority} onChange={event => setPriority(event.target.value as SupportTicket['priority'])}><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></label><label className="full">Mensaje<textarea required minLength={10} maxLength={5000} value={message} onChange={event => setMessage(event.target.value)} placeholder="Describe lo que necesitas resolver…" /></label></div>{error && <div className="form-error">{error}</div>}<div className="modal-actions"><Button type="button" variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" disabled={loading}>{loading ? 'Enviando…' : 'Enviar solicitud'}</Button></div></form>
 </Modal>;
