@@ -48,11 +48,27 @@ td small{font-size:11px}
 .material-group li>.catalog-item-actions button{width:32px;height:32px}
 .material-group>button{display:flex;width:calc(100% - 16px);height:auto;min-height:44px;margin:8px;justify-content:flex-start;padding:10px 12px;line-height:1.3;white-space:normal;text-align:left}
 
-/* El nuevo recurso es un isotipo negro con transparencia: debe conservarse
-   completo y contrastar sobre blanco en las tres ubicaciones. */
-.platform-logo-frame{aspect-ratio:1.5;overflow:hidden;background:#fff;border:1px solid #e0e7f0;border-radius:14px;box-shadow:0 8px 22px rgba(16,37,63,.12)}
+/* El isotipo de la plataforma queda libre, sin tarjeta, dentro del menú.
+   La tarjeta blanca con mayor contraste se reserva exclusivamente al login. */
+.platform-logo-frame,
+.platform-logo-mobile-frame{
+  aspect-ratio:1.5;
+  overflow:visible;
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+}
 .platform-logo,.platform-logo-mobile{height:100%;object-fit:contain;object-position:center}
-.platform-login-logo-frame,.login-card .platform-login-logo-frame{aspect-ratio:1.5;background:#fff;border-color:#dce6ef}
+.platform-login-logo-frame,
+.login-card .platform-login-logo-frame{
+  aspect-ratio:1.5;
+  overflow:hidden;
+  background:#fff;
+  border:2px solid #111315;
+  border-radius:18px;
+  box-shadow:0 18px 40px rgba(17,19,21,.18),0 4px 12px rgba(17,19,21,.1),0 0 0 4px rgba(17,19,21,.035);
+}
 .platform-login-logo{object-fit:contain;object-position:center}
 
 @media(max-width:760px){
@@ -76,7 +92,7 @@ td small{font-size:11px}
   .material-group li>.catalog-item-actions button{width:36px;height:36px}
   .material-group>button{width:calc(100% - 16px);font-size:14px}
   .platform-logo-frame{width:min(78vw,180px);aspect-ratio:1.5}
-  .platform-logo-mobile-frame{aspect-ratio:1.5;overflow:hidden;background:#fff;border:1px solid #e0e7f0;border-radius:14px}
+  .platform-logo-mobile-frame{aspect-ratio:1.5;overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none}
   .platform-login-logo-frame,.login-card .platform-login-logo-frame{aspect-ratio:1.5}
 }
 
