@@ -4,10 +4,16 @@ import {
   ArrowRight,
   BarChart3,
   Boxes,
+  Building2,
   CheckCircle2,
+  FileCheck2,
+  Handshake,
   LayoutDashboard,
-  ShieldCheck,
+  Mail,
+  MessageCircle,
+  Phone,
   Truck,
+  UsersRound,
 } from 'lucide-react';
 
 type PublicLandingProps = {
@@ -23,9 +29,19 @@ const features = [
     text: 'Controla existencias, costos, monedas, movimientos y valorización en tiempo real.',
   },
   {
+    icon: UsersRound,
+    title: 'Control de clientes',
+    text: 'Centraliza contactos, documentos, materiales asociados y el historial de cada cliente.',
+  },
+  {
+    icon: Handshake,
+    title: 'Gestión de proveedores',
+    text: 'Organiza recolectores y empresas proveedoras con sus datos, categorías y movimientos.',
+  },
+  {
     icon: Truck,
-    title: 'Operaciones sin duplicar trabajo',
-    text: 'Registra compras, boletas, ventas y mermas desde un flujo claro y conectado.',
+    title: 'Operaciones conectadas',
+    text: 'Registra compras, boletas, ventas y mermas desde un flujo claro y sin duplicar trabajo.',
   },
   {
     icon: BarChart3,
@@ -33,17 +49,18 @@ const features = [
     text: 'Convierte tu operación diaria en indicadores, reportes y tendencias fáciles de entender.',
   },
   {
-    icon: ShieldCheck,
-    title: 'Una empresa aislada y segura',
-    text: 'Cada organización trabaja con sus propios usuarios, permisos, configuraciones y registros.',
+    icon: FileCheck2,
+    title: 'Documentos y trazabilidad',
+    text: 'Genera boletas, certificados e informes y conserva el historial de cada operación.',
   },
 ];
 
 const benefits = [
   'Usuarios y permisos por empresa',
+  'Control de clientes y proveedores',
   'Boletas y certificados listos para imprimir',
   'Reportes operativos y financieros',
-  'Soporte y acompañamiento para comenzar',
+  'Soporte directo para comenzar',
 ];
 
 export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingProps) {
@@ -57,6 +74,7 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
         <a href="#solucion">La solución</a>
         <a href="#funciones">Funciones</a>
         <a href="#como-funciona">Cómo funciona</a>
+        <a href="#contacto">Contacto</a>
       </nav>
       <div className="landing-nav-actions">
         <button className="landing-login-link" type="button" onClick={onLogin}>Iniciar sesión</button>
@@ -92,8 +110,36 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
     <section className="landing-proof" aria-label="Beneficios principales">
       <div><strong>Una plataforma para ordenar el día a día</strong><span>Menos hojas sueltas. Más control.</span></div>
       <div><b>Inventario</b><span>Conectado con tus movimientos</span></div>
-      <div><b>Boletas</b><span>Documentos listos para tu operación</span></div>
+      <div><b>Clientes y proveedores</b><span>Relaciones comerciales organizadas</span></div>
       <div><b>Reportes</b><span>Información para decidir mejor</span></div>
+    </section>
+
+    <section className="landing-section landing-ecosystem" aria-labelledby="landing-ecosystem-title">
+      <div className="landing-ecosystem-copy">
+        <p className="landing-eyebrow"><span /> Una operación conectada</p>
+        <h2 id="landing-ecosystem-title">Cada registro alimenta una visión más completa de tu empresa.</h2>
+        <p>Desde quién entrega el material hasta quién lo compra, Gavrion EcoSystems mantiene la información relacionada y disponible para tu equipo.</p>
+        <ul>
+          <li><CheckCircle2 aria-hidden="true" /><span><strong>Proveedores organizados</strong> por categoría, datos de contacto y materiales.</span></li>
+          <li><CheckCircle2 aria-hidden="true" /><span><strong>Inventario actualizado</strong> después de cada entrada, venta o ajuste.</span></li>
+          <li><CheckCircle2 aria-hidden="true" /><span><strong>Clientes centralizados</strong> con documentos e historial operativo.</span></li>
+        </ul>
+      </div>
+      <div className="landing-ecosystem-board" aria-label="Flujo visual entre proveedores, inventario y clientes">
+        <div className="landing-board-head"><span><Building2 aria-hidden="true" /> Centro de operaciones</span><b><i /> Información conectada</b></div>
+        <div className="landing-flow">
+          <article><span><Handshake aria-hidden="true" /></span><small>Origen</small><strong>Proveedores</strong><em>12 activos</em></article>
+          <ArrowRight className="landing-flow-arrow" aria-hidden="true" />
+          <article className="featured"><span><Boxes aria-hidden="true" /></span><small>Control</small><strong>Inventario</strong><em>8.74 toneladas</em></article>
+          <ArrowRight className="landing-flow-arrow" aria-hidden="true" />
+          <article><span><UsersRound aria-hidden="true" /></span><small>Destino</small><strong>Clientes</strong><em>18 registrados</em></article>
+        </div>
+        <div className="landing-board-records">
+          <div><span className="landing-record-avatar">PR</span><p><strong>Recolector principal</strong><small>Entrada registrada · Hierro</small></p><b>+ 1.25 t</b></div>
+          <div><span className="landing-record-avatar client">CL</span><p><strong>Cliente empresarial</strong><small>Boleta emitida · Aluminio</small></p><b>- 0.80 t</b></div>
+        </div>
+        <div className="landing-board-summary"><span><small>Documentos</small><b>36</b></span><span><small>Operaciones</small><b>24</b></span><span><small>Estado</small><b>Al día</b></span></div>
+      </div>
     </section>
 
     <section className="landing-section landing-features" id="funciones">
@@ -108,6 +154,15 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
 
     <section className="landing-cta-section"><div><p className="landing-eyebrow"><span /> Gavrion EcoSystems</p><h2>Haz que cada movimiento cuente.</h2><p>Conoce una forma más ordenada de administrar tu empresa de reciclaje.</p></div><div className="landing-cta-actions"><ul>{benefits.map(benefit => <li key={benefit}><CheckCircle2 aria-hidden="true" />{benefit}</li>)}</ul><button className="landing-primary-cta" type="button" onClick={onRequestAccess}>Solicitar acceso <ArrowRight aria-hidden="true" /></button></div></section>
 
-    <footer className="landing-footer"><span>© {new Date().getFullYear()} Gavrion EcoSystems</span><span>Gestión empresarial para una operación más eficiente.</span><button type="button" onClick={onLogin}>Ingresar al sistema</button></footer>
+    <section className="landing-contact" id="contacto" aria-labelledby="landing-contact-title">
+      <div className="landing-contact-copy"><p className="landing-eyebrow"><span /> Contacto directo</p><h2 id="landing-contact-title">¿Quieres conocer mejor el sistema?</h2><p>Conversemos sobre tu empresa y las herramientas que necesitas para controlar tu operación.</p></div>
+      <div className="landing-contact-options">
+        <a href="mailto:gavrionn@gmail.com"><span><Mail aria-hidden="true" /></span><div><small>Escríbenos por correo</small><strong>gavrionn@gmail.com</strong></div><ArrowRight aria-hidden="true" /></a>
+        <a href="https://wa.me/50498433252" target="_blank" rel="noreferrer"><span><MessageCircle aria-hidden="true" /></span><div><small>Conversemos por WhatsApp</small><strong>+504 9843-3252</strong></div><ArrowRight aria-hidden="true" /></a>
+        <a href="tel:+50498433252"><span><Phone aria-hidden="true" /></span><div><small>Llámanos directamente</small><strong>+504 9843-3252</strong></div><ArrowRight aria-hidden="true" /></a>
+      </div>
+    </section>
+
+    <footer className="landing-footer"><span>© {new Date().getFullYear()} Gavrion EcoSystems</span><span>Gestión empresarial para una operación más eficiente.</span><div><a href="mailto:gavrionn@gmail.com">gavrionn@gmail.com</a><a href="tel:+50498433252">+504 9843-3252</a><button type="button" onClick={onLogin}>Ingresar al sistema</button></div></footer>
   </main>;
 }

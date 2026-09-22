@@ -37,9 +37,9 @@ export function FinancialReports({notify}:{notify:(message:string,tone?:'success
   try{
    const snap=snapshot(section),detail:Cell[][]=[section.headers,...section.rows,...(section.total?[section.total]:[])];
    await recordDocumentActivity('report').catch(()=>undefined);
-   const executive:Cell[][]=[['Resumen ejecutivo',section.title],['Empresa',snap.company],['Generado',snap.generated],...metadata,['Indicador','Valor','Unidad'],...section.metrics.map(m=>[m.label,m.value,m.unit]),['Notas',note]];
+   const executive:Cell[][]=[['REPORTE EJECUTIVO',section.title],[],['DATOS DEL REPORTE'],['Empresa',snap.company],['Generado',snap.generated],[],['FILTROS APLICADOS'],...metadata,[],['INDICADORES'],['Indicador','Valor','Unidad'],...section.metrics.map(m=>[m.label,m.value,m.unit]),[],['Notas',note]];
    const filename='reporte-'+section.id+'-'+(from||'inicio')+'-'+(to||'hoy');
-   if(format==='xlsx')downloadReport(reportXlsx([{name:'Resumen ejecutivo',rows:executive},{name:'Detalle',rows:detail}]).buffer as ArrayBuffer,filename+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+   if(format==='xlsx')downloadReport(reportXlsx([{name:'Resumen ejecutivo',rows:executive,role:'summary'},{name:'Detalle',rows:detail,role:'detail'}]).buffer as ArrayBuffer,filename+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
    else downloadReport(reportCsv([[...section.headers,...metadata.map(([label])=>label)],...detail.slice(1).map(row=>[...row,...metadata.map(([,value])=>value)])]),filename+'.csv','text/csv;charset=utf-8');
    notify('Exportado: '+section.title+'. Solo incluye esta sección y los filtros seleccionados.');
  }catch(e){notify(e instanceof Error?e.message:'No fue posible exportar.','error')}finally{setExporting('')}

@@ -40,9 +40,9 @@ export function CustomReportBuilder({events,rate,ready=true,notify}:{sections?:E
  const extra:[string,string][]=query==='supplier-ranking'?[['Orden',order==='amount'?'Mayor importe':'Mayor peso'],['Mostrar',limit?'Primeros '+limit:'Todos']]:[];
  const snapshot:ReportSnapshot={section:selected,company:settings?.name??'Gavrion EcoSystems',logo:settings?.logo_url,metadata:[...localMetadata,...extra],note:localNote,generated:new Date().toLocaleString('es-HN',{timeZone:'America/Tegucigalpa'})};setResult({key:signature,snapshot});return snapshot};
  const exportSnapshot=(snap:ReportSnapshot,format:'xlsx'|'csv')=>{setBusy(true);try{
- const s=snap.section,detail:Cell[][]=[s.headers,...s.rows,...(s.total?[s.total]:[])],summary:Cell[][]=[['Resumen ejecutivo',s.title],['Empresa',snap.company],['Generado',snap.generated],...snap.metadata,['Indicador','Valor','Unidad'],...s.metrics.map(m=>[m.label,m.value,m.unit]),['Notas',snap.note]];
+ const s=snap.section,detail:Cell[][]=[s.headers,...s.rows,...(s.total?[s.total]:[])],summary:Cell[][]=[['REPORTE EJECUTIVO',s.title],[],['DATOS DEL REPORTE'],['Empresa',snap.company],['Generado',snap.generated],[],['FILTROS APLICADOS'],...snap.metadata,[],['INDICADORES'],['Indicador','Valor','Unidad'],...s.metrics.map(m=>[m.label,m.value,m.unit]),[],['Notas',snap.note]];
  const filename='consulta-'+s.id+'-'+new Date().toISOString().slice(0,10);
- if(format==='xlsx')downloadReport(reportXlsx([{name:'Resumen ejecutivo',rows:summary},{name:'Detalle',rows:detail}]).buffer as ArrayBuffer,filename+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+ if(format==='xlsx')downloadReport(reportXlsx([{name:'Resumen ejecutivo',rows:summary,role:'summary'},{name:'Detalle',rows:detail,role:'detail'}]).buffer as ArrayBuffer,filename+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
  else downloadReport(reportCsv([[...s.headers,...snap.metadata.map(([label])=>label)],...detail.slice(1).map(row=>[...row,...snap.metadata.map(([,value])=>value)])]),filename+'.csv','text/csv;charset=utf-8');
  notify('Consulta exportada: '+s.title);
  }catch(e){notify(e instanceof Error?e.message:'No se pudo exportar.','error')}finally{setBusy(false)}};
