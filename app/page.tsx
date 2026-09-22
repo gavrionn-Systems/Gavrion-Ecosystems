@@ -7,6 +7,7 @@ import { supplierDisplayId, clientDisplayId } from '@/lib/party-codes';
 import { AddUser, SupplierCategories } from '@/components/admin-settings';
 import { OnboardingWizard } from '@/components/onboarding-wizard';
 import { PlatformAdminPanel } from '@/components/platform-admin';
+import { PlatformExecutivePanel } from '@/components/platform-executive';
 import { defaultSupplierCategories, supplierCategoryId } from '@/lib/supplier-categories';
 import { CodeSettings } from '@/components/code-settings';
 import { MaterialCatalog } from '@/components/material-catalog';
@@ -34,7 +35,7 @@ const navItems = [
     { id: 'clientes', label: 'Cliente', icon: Users, admin: false },
     { id: 'reportes', label: 'Reportería', icon: FileBarChart, admin: true },
     { id: 'configuracion', label: 'Configuración', icon: Settings, admin: true },
-    { id: 'plataforma', label: 'Panel administrativo SaaS', icon: Building2, admin: true, platformOnly: true },
+    { id: 'plataforma', label: 'Panel de plataforma', icon: Building2, admin: true, platformOnly: true },
 ] as const;
 const formatDate = (value?: string) => value ? new Intl.DateTimeFormat('es-HN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T12:00:00`)) : '—';
 const number = (value: number, digits = 2) => new Intl.NumberFormat('es-HN', { maximumFractionDigits: digits }).format(value);
@@ -165,7 +166,7 @@ function AccessGate({ children }: {
 {!demoMode && <button type="button" className="login-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setLocalError(''); setSuccess(''); }}>{mode === 'login' ? '¿Primera vez? Crear cuenta' : 'Ya tengo una cuenta · Iniciar sesión'}</button>}
 </form>
 {recoveryOpen && <PasswordRecoveryModal onClose={() => setRecoveryOpen(false)}/>}</main>;
-    if (accessStatus && !accessStatus.platform_admin && accessStatus.status !== 'active') return <AccessPendingScreen status={accessStatus} onRefresh={() => void refresh()} onSignOut={() => void signOut()} />;
+    if (accessStatus && !accessStatus.platform_admin && !accessStatus.platform_executive && accessStatus.status !== 'active') return <AccessPendingScreen status={accessStatus} onRefresh={() => void refresh()} onSignOut={() => void signOut()} />;
     return <>{children}</>;
 }
 function SupportModal({ onClose, notify }: { onClose: () => void; notify: (n: Notice) => void }) {
@@ -1184,11 +1185,14 @@ function NotificationPopover({ items, onReadAll }: { items: NotificationRecord[]
 </div>;
 }
 function EconexoApp() {
-    const { user, profiles, settings, error, loading, refresh, signOut, platformOrganizations, notifications, unreadNotifications, markNotificationsRead } = useEconexoData();
+    const { user, profiles, settings, error, loading, refresh, signOut, accessStatus, notifications, unreadNotifications, markNotificationsRead } = useEconexoData();
     const profile = profiles.find(x => x.id === user?.id);
     const isAdmin = profile?.role === 'admin';
-    const isPlatformAdmin = platformOrganizations.length > 0;
-    const [view, setView] = useState<View>(isAdmin ? 'dashboard' : 'inventarios');
+    const isPlatformAdmin = accessStatus?.platform_admin === true;
+    const isPlatformExecutive = accessStatus?.platform_executive === true;
+    const isPlatformOperator = isPlatformAdmin || isPlatformExecutive;
+    const [view, setView] = useState<View>(isPlatformOperator ? 'plataforma' : isAdmin ? 'dashboard' : 'inventarios');
+    useEffect(() => { if (isPlatformOperator) setView('plataforma'); }, [isPlatformOperator]);
     const [editingInventory, setEditingInventory] = useState<InventoryRecord | undefined>();
     const [drawer, setDrawer] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
@@ -1199,16 +1203,17 @@ function EconexoApp() {
     const title = useMemo(() => navItems.find(n => n.id === view)?.label ?? 'Inventario', [view]);
     const company = PLATFORM_NAME;
     const notify = (next: Notice) => { setNotice(next); window.setTimeout(() => setNotice(null), 3000); };
-    const go = (id: View) => { if (!isAdmin && ['dashboard', 'reportes', 'configuracion', 'plataforma'].includes(id))
-        return; if (id === 'plataforma' && !isPlatformAdmin)
+    const go = (id: View) => { if (!isAdmin && ['dashboard', 'reportes', 'configuracion'].includes(id))
+        return; if (id === 'plataforma' && !isPlatformOperator)
         return; setView(id); setDrawer(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     const editInventory = (record?: InventoryRecord) => { setEditingInventory(record); go('inventario-form'); };
     const moduleForNav: Record<string, string> = { dashboard: 'dashboard', inventarios: 'inventory', facturacion: 'weight_tickets', certificados: 'certificates', abastecimiento: 'suppliers', clientes: 'clients', reportes: 'reports' };
     const moduleEnabled = (id: string) => settings?.enabled_modules?.[moduleForNav[id] ?? id] !== false;
+    const canSeeNav = (item: typeof navItems[number]) => isPlatformExecutive && !isPlatformAdmin ? ('platformOnly' in item && item.platformOnly) : ((isAdmin || !item.admin) || ('platformOnly' in item && item.platformOnly && isPlatformOperator));
     const nav = <>
 <div className="brand platform-brand"><div className="platform-logo-frame"><img className="platform-logo" src={PLATFORM_LOGO} alt={company}/></div><strong className="platform-brand-name">{company}</strong><small>Sistema empresarial</small>
 </div>
-<nav>{navItems.filter(n => (isAdmin || !n.admin) && moduleEnabled(n.id) && (!('platformOnly' in n) || !n.platformOnly || isPlatformAdmin)).map(({ id, label, icon: Icon }) => <button className={(view === id || (view === 'inventario-form' && id === 'inventarios')) ? 'nav-item active' : 'nav-item'} key={id} onClick={() => go(id)}>
+<nav>{navItems.filter(n => canSeeNav(n) && moduleEnabled(n.id) && (!('platformOnly' in n) || !n.platformOnly || isPlatformOperator)).map(({ id, label, icon: Icon }) => <button className={(view === id || (view === 'inventario-form' && id === 'inventarios')) ? 'nav-item active' : 'nav-item'} key={id} onClick={() => go(id)}>
 <Icon />
 <span>{label}</span>
 </button>)}</nav>
@@ -1244,13 +1249,13 @@ function EconexoApp() {
 <span className="avatar">{initials(profile?.full_name ?? user?.email ?? 'Usuario')}</span>
 <div>
 <strong>{profile?.full_name ?? user?.email}</strong>
-<small>{isAdmin ? 'Administrador' : 'Vendedor'}</small>
+<small>{isPlatformExecutive && !isPlatformAdmin ? 'Ejecutivo de plataforma' : isAdmin ? 'Administrador' : 'Vendedor'}</small>
 </div>
 <ChevronDown />
 </button>{profileOpen && <div className="profile-menu">
 <p>CUENTA</p>
 <button disabled>
-<UserCog />{isAdmin ? 'Administrador' : 'Vendedor'}</button>
+<UserCog />{isPlatformExecutive && !isPlatformAdmin ? 'Ejecutivo de plataforma' : isAdmin ? 'Administrador' : 'Vendedor'}</button>
 <button onClick={() => { setSecurityOpen(true); setProfileOpen(false); }}><Lock />Cambiar contraseña</button>
 <hr />
 <button onClick={() => void signOut()}>Cerrar sesión</button>
@@ -1260,7 +1265,7 @@ function EconexoApp() {
 <strong>Error de sincronización</strong>
 <span>{error}</span>
 <button onClick={() => void refresh()}>Reintentar</button>
-</div>}{view === 'dashboard' && isAdmin && <BusinessDashboard />}{view === 'inventarios' && <Inventory onEdit={editInventory} notify={notify}/>} {view === 'facturacion' && <WeightTickets notify={(message, tone) => notify({ message, tone })}/>} {view === 'inventario-form' && <InventoryForm record={editingInventory} onBack={() => go('inventarios')} notify={notify}/>} {view === 'abastecimiento' && <Supply notify={notify}/>} {view === 'clientes' && <Clients notify={notify}/>} {view === 'certificados' && <Certificates/>} {view === 'reportes' && isAdmin && <FinancialReports notify={(message,tone)=>notify({message,tone})}/>} {view === 'configuracion' && isAdmin && <SettingsView notify={notify}/>} {view === 'plataforma' && isPlatformAdmin && <PlatformAdminPanel/>}</div>
+</div>}{view === 'dashboard' && isAdmin && <BusinessDashboard />}{view === 'inventarios' && <Inventory onEdit={editInventory} notify={notify}/>} {view === 'facturacion' && <WeightTickets notify={(message, tone) => notify({ message, tone })}/>} {view === 'inventario-form' && <InventoryForm record={editingInventory} onBack={() => go('inventarios')} notify={notify}/>} {view === 'abastecimiento' && <Supply notify={notify}/>} {view === 'clientes' && <Clients notify={notify}/>} {view === 'certificados' && <Certificates/>} {view === 'reportes' && isAdmin && <FinancialReports notify={(message,tone)=>notify({message,tone})}/>} {view === 'configuracion' && isAdmin && <SettingsView notify={notify}/>} {view === 'plataforma' && isPlatformAdmin && <PlatformAdminPanel/>}{view === 'plataforma' && isPlatformExecutive && !isPlatformAdmin && <PlatformExecutivePanel/>}</div>
 </section>{securityOpen && <PasswordModal onClose={() => setSecurityOpen(false)} notify={notify}/>} {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} notify={notify}/>}<footer className="site-footer">Derechos reservados · Gavrion EcoSystems</footer>{notice && <div className={`toast ${notice.tone === 'error' ? 'toast-error' : ''}`}>
 <span>{notice.tone === 'error' ? <X /> : <Check />}</span>{notice.message}</div>}{settings?.onboarding_completed === false && <OnboardingWizard onComplete={() => void refresh()} />}</main>;
 }
