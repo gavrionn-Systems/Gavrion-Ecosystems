@@ -64,10 +64,12 @@ td small{font-size:11px}
 .login-card .platform-login-logo-frame{
   aspect-ratio:1.5;
   overflow:hidden;
-  background:#fff;
-  border:2px solid #111315;
+  background:
+    linear-gradient(#fff,#fff) padding-box,
+    linear-gradient(135deg,rgba(17,19,21,.72),rgba(96,116,95,.42) 52%,rgba(33,140,102,.18)) border-box;
+  border:1px solid transparent;
   border-radius:18px;
-  box-shadow:0 18px 40px rgba(17,19,21,.18),0 4px 12px rgba(17,19,21,.1),0 0 0 4px rgba(17,19,21,.035);
+  box-shadow:0 16px 38px rgba(17,19,21,.11),0 5px 14px rgba(38,53,43,.06),0 0 0 4px rgba(96,116,95,.025);
 }
 .platform-login-logo{object-fit:contain;object-position:center}
 

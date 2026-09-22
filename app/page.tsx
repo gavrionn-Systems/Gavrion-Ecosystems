@@ -156,7 +156,7 @@ function AccessGate({ children }: {
             setLocalError(err instanceof Error ? err.message : 'No fue posible iniciar sesión');
         } }}>
 <div className="platform-login-logo-frame"><img className="platform-login-logo" src={PLATFORM_LOGO} alt={PLATFORM_NAME}/></div>
-<button type="button" className="login-back-to-landing" onClick={() => setShowLanding(true)}>← Volver a la presentación</button>
+<button type="button" className="login-back-to-landing" onClick={() => setShowLanding(true)}>Conocer Gavrion EcoSystems</button>
 <p className="eyebrow">GAVRION ECOSYSTEMS</p>
 <h1>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1>
 {mode === 'login' && <p className="login-description">Ingresa tus credenciales para acceder al sistema.</p>}
