@@ -16,12 +16,13 @@ import { FinancialReports } from '@/components/financial-reports';
 import { BusinessDashboard } from '@/components/business-dashboard';
 import { Certificates } from '@/components/certificates';
 import { WeightTickets } from '@/components/weight-tickets';
+import { PublicLanding } from '@/components/public-landing';
 import { Button } from '@/components/ui/button';
 import { AnimatedValue, RefreshButton, NotificationBell, MobileDrawer } from '@/components/motion';
 import { EconexoDataProvider, useEconexoData, type AccessStatus, type CategoryRecord, type ClientRecord, type InventoryRecord, type MaterialRecord, type NotificationRecord, type ProfileRecord, type SupportTicket, type SupplierRecord, } from '@/lib/econexo-data';
 type View = 'certificados' | 'dashboard' | 'inventarios' | 'inventario-form' | 'facturacion' | 'abastecimiento' | 'clientes' | 'reportes' | 'configuracion' | 'plataforma';
 const PLATFORM_NAME = 'Gavrion EcoSystems';
-const PLATFORM_LOGO = '/gavrion-ecosystems-logo.png';
+const PLATFORM_LOGO = '/gavrion-ecosystems-new.png';
 type Notice = {
     message: string;
     tone?: 'success' | 'error';
@@ -132,6 +133,7 @@ function AccessGate({ children }: {
     const [localError, setLocalError] = useState('');
     const [success, setSuccess] = useState('');
     const [recoveryOpen, setRecoveryOpen] = useState(false);
+    const [showLanding, setShowLanding] = useState(true);
     if (!ready)
         return <main className="setup-screen">
 <div className="setup-card">
@@ -139,6 +141,8 @@ function AccessGate({ children }: {
 <p>Comprobando sesión…</p>
 </div>
 </main>;
+    if (!user && showLanding)
+        return <PublicLanding logo={PLATFORM_LOGO} onLogin={() => { setMode('login'); setShowLanding(false); }} onRequestAccess={() => { setMode('signup'); setShowLanding(false); }} />;
     if (!user)
         return <main className="setup-screen">
 <form className="setup-card login-card" onSubmit={async (e) => { e.preventDefault(); setLocalError(''); try {
@@ -152,6 +156,7 @@ function AccessGate({ children }: {
             setLocalError(err instanceof Error ? err.message : 'No fue posible iniciar sesión');
         } }}>
 <div className="platform-login-logo-frame"><img className="platform-login-logo" src={PLATFORM_LOGO} alt={PLATFORM_NAME}/></div>
+<button type="button" className="login-back-to-landing" onClick={() => setShowLanding(true)}>← Volver a la presentación</button>
 <p className="eyebrow">GAVRION ECOSYSTEMS</p>
 <h1>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1>
 {mode === 'login' && <p className="login-description">Ingresa tus credenciales para acceder al sistema.</p>}
@@ -166,7 +171,7 @@ function AccessGate({ children }: {
 {!demoMode && <button type="button" className="login-switch" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setLocalError(''); setSuccess(''); }}>{mode === 'login' ? '¿Primera vez? Crear cuenta' : 'Ya tengo una cuenta · Iniciar sesión'}</button>}
 </form>
 {recoveryOpen && <PasswordRecoveryModal onClose={() => setRecoveryOpen(false)}/>}</main>;
-    if (!demoMode && (loading || !accessStatus))
+    if (!demoMode && !accessStatus)
         return <main className="setup-screen"><div className="setup-card"><div className="loader"/><p>Preparando tus permisos…</p></div></main>;
     if (accessStatus && !accessStatus.platform_admin && !accessStatus.platform_executive && accessStatus.status !== 'active') return <AccessPendingScreen status={accessStatus} onRefresh={() => void refresh()} onSignOut={() => void signOut()} />;
     return <>{children}</>;

@@ -1,0 +1,87 @@
+/* Ajustes globales de legibilidad y de los catálogos.
+   Este archivo se carga al final para que las reglas responsive prevalezcan
+   sobre los estilos históricos del sistema. */
+
+body{font-size:16px}
+.breadcrumb{font-size:14px}
+.nav-item{font-size:16px}
+.eyebrow{font-size:13px}
+.page-title>div>p:last-child{font-size:16px}
+.section-title h2{font-size:18px}
+.section-title p{font-size:13px}
+.dashboard-controls{font-size:14px}
+.form-grid label,.filter-grid label{font-size:13px}
+.form-grid input,.form-grid select,.form-grid textarea,.filter-grid input,.filter-grid select{font-size:14px}
+.form-grid label>small{font-size:11px}
+.settings-nav button{font-size:14px}
+.settings-content h2,.form-card h2,.totals-card h2{font-size:19px}
+.settings-head p{font-size:13px}
+.history-list strong{font-size:14px}
+.history-list small{font-size:11px}
+.loading-state{font-size:13px}
+table{font-size:13px}
+th{font-size:11px}
+td strong{font-size:13px}
+td small{font-size:11px}
+.status{font-size:11px}
+.material-group h3{font-size:16px;margin:0;min-width:0;overflow-wrap:anywhere}
+.material-group li{font-size:13px}
+.material-group li small{font-size:11px}
+.material-group>p{font-size:13px}
+.material-group>button{font-size:13px}
+
+/* Categorías de proveedores: el listado tiene tres hijos (texto + dos acciones).
+   La columna de icono heredada dejaba los botones fuera de su fila. */
+.settings-content .history-list>div{grid-template-columns:minmax(0,1fr) auto auto;min-width:0}
+.settings-content .history-list>div>p{min-width:0;overflow-wrap:anywhere}
+.settings-content .history-list>div>button{width:auto;min-width:108px;min-height:40px;padding-inline:14px;white-space:nowrap}
+
+/* Catálogo de materiales: encabezado y acciones ocupan columnas reales y
+   cada fila puede encogerse sin cortar nombres o controles. */
+.material-group{overflow:visible;min-width:0}
+.material-group>div:has(>h3:first-child){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;min-width:0}
+.material-group .catalog-item-actions{display:flex;align-items:center;gap:4px;min-width:max-content}
+.material-group>div .catalog-item-actions button{width:34px;height:34px}
+.material-group li{grid-template-columns:minmax(0,1fr) auto 37px auto;min-width:0}
+.material-group li>span{min-width:0;overflow-wrap:anywhere}
+.material-group li>.catalog-item-actions{display:flex;gap:3px;min-width:max-content}
+.material-group li>.catalog-item-actions button{width:32px;height:32px}
+.material-group>button{display:flex;width:calc(100% - 16px);height:auto;min-height:44px;margin:8px;justify-content:flex-start;padding:10px 12px;line-height:1.3;white-space:normal;text-align:left}
+
+/* El nuevo recurso es un isotipo negro con transparencia: debe conservarse
+   completo y contrastar sobre blanco en las tres ubicaciones. */
+.platform-logo-frame{aspect-ratio:1.5;overflow:hidden;background:#fff;border:1px solid #e0e7f0;border-radius:14px;box-shadow:0 8px 22px rgba(16,37,63,.12)}
+.platform-logo,.platform-logo-mobile{height:100%;object-fit:contain;object-position:center}
+.platform-login-logo-frame,.login-card .platform-login-logo-frame{aspect-ratio:1.5;background:#fff;border-color:#dce6ef}
+.platform-login-logo{object-fit:contain;object-position:center}
+
+@media(max-width:760px){
+  .nav-item{font-size:16px;min-height:48px}
+  .page-title>div>p:last-child{font-size:15px}
+  .dashboard-controls{font-size:14px}
+  .settings-content{padding:18px 16px}
+  .settings-head h2,.settings-content h2{font-size:20px}
+  .settings-head p{font-size:14px;line-height:1.45}
+  .settings-content .history-list>div{grid-template-columns:minmax(0,1fr) auto;gap:9px}
+  .settings-content .history-list>div>p{grid-column:1;grid-row:1 / span 2}
+  .settings-content .history-list>div>button{grid-column:2;min-width:104px;min-height:42px}
+  .settings-content .history-list>div>button:first-of-type{grid-row:1}
+  .settings-content .history-list>div>button:last-of-type{grid-row:2}
+  .material-group>div:has(>h3:first-child){grid-template-columns:minmax(0,1fr) auto;padding:13px 12px}
+  .material-group li{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:11px 12px;align-items:center}
+  .material-group li>span{grid-column:1;grid-row:1}
+  .material-group li>small{grid-column:2;grid-row:1}
+  .material-group li>.toggle{grid-column:1;grid-row:2;justify-self:start}
+  .material-group li>.catalog-item-actions{grid-column:2;grid-row:2}
+  .material-group li>.catalog-item-actions button{width:36px;height:36px}
+  .material-group>button{width:calc(100% - 16px);font-size:14px}
+  .platform-logo-frame{width:min(78vw,180px);aspect-ratio:1.5}
+  .platform-logo-mobile-frame{aspect-ratio:1.5;overflow:hidden;background:#fff;border:1px solid #e0e7f0;border-radius:14px}
+  .platform-login-logo-frame,.login-card .platform-login-logo-frame{aspect-ratio:1.5}
+}
+
+@media(max-width:430px){
+  .page-title h1{font-size:30px}
+  .page-title>div>p:last-child{font-size:15px}
+  .settings-content .history-list>div>button{min-width:96px;padding-inline:10px}
+}
