@@ -3,20 +3,19 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
-  BadgeCheck,
   BarChart3,
   Boxes,
   Building2,
   CheckCircle2,
-  ContactRound,
   FileCheck2,
-  FileText,
   Handshake,
   LayoutDashboard,
-  LifeBuoy,
+  Activity,
   Mail,
   MessageCircle,
   Phone,
+  Send,
+  Settings2,
   Truck,
   UsersRound,
 } from 'lucide-react';
@@ -60,12 +59,10 @@ const features = [
   },
 ];
 
-const benefits = [
-  { icon: BadgeCheck, text: 'Usuarios y permisos por empresa' },
-  { icon: ContactRound, text: 'Control de clientes y proveedores' },
-  { icon: FileText, text: 'Boletas y certificados listos para imprimir' },
-  { icon: BarChart3, text: 'Reportes operativos y financieros' },
-  { icon: LifeBuoy, text: 'Soporte directo para comenzar' },
+const workflowSteps = [
+  { icon: Send, title: 'Solicita tu acceso', text: 'Cuéntanos quién eres y qué empresa quieres configurar.' },
+  { icon: Settings2, title: 'Configuramos tu espacio', text: 'Define usuarios, materiales, moneda y datos de la empresa.' },
+  { icon: Activity, title: 'Opera con información real', text: 'Registra movimientos y consulta indicadores en un solo sistema.' },
 ];
 
 function AnimatedNumber({ value, decimals = 0, prefix = '', suffix = '' }: { value: number; decimals?: number; prefix?: string; suffix?: string }) {
@@ -111,9 +108,18 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
         (entry.target as HTMLElement).classList.add('is-visible');
         observer.unobserve(entry.target);
       });
-    }, { threshold: .12, rootMargin: '0px 0px -36px' });
+    }, { threshold: .04, rootMargin: '0px 0px -20px' });
     elements.forEach(element => observer.observe(element));
-    return () => observer.disconnect();
+    const revealReachedElements = () => elements.forEach(element => {
+      if (element.classList.contains('is-visible')) return;
+      if (element.getBoundingClientRect().top <= window.innerHeight * .94) {
+        element.classList.add('is-visible');
+        observer.unobserve(element);
+      }
+    });
+    revealReachedElements();
+    window.addEventListener('scroll', revealReachedElements, { passive: true });
+    return () => { observer.disconnect(); window.removeEventListener('scroll', revealReachedElements); };
   }, []);
   return <main className="public-landing" ref={rootRef}>
     <header className="landing-nav">
@@ -140,7 +146,7 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
         <p className="landing-lead">Gavrion EcoSystems reúne inventario, boletas, ventas, clientes y reportes en un solo lugar para que puedas operar mejor y crecer con información confiable.</p>
         <div className="landing-hero-actions">
           <button className="landing-primary-cta" type="button" onClick={onRequestAccess}>Quiero conocer el sistema <ArrowRight aria-hidden="true" /></button>
-          <button className="landing-secondary-cta" type="button" onClick={onLogin}>Ya tengo una cuenta</button>
+          <a className="landing-secondary-cta" href="#funciones">Explorar funciones</a>
         </div>
         <div className="landing-hero-note"><CheckCircle2 aria-hidden="true" /> Solicitud sujeta a aprobación para proteger cada empresa.</div>
       </div>
@@ -156,13 +162,6 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
         </div>
         <div className="landing-preview-card landing-preview-float"><span className="landing-float-icon"><Boxes aria-hidden="true" /></span><span><small>Existencias disponibles</small><b>Control en tiempo real</b></span><CheckCircle2 aria-hidden="true" /></div>
       </div>
-    </section>
-
-    <section className="landing-proof" aria-label="Beneficios principales" data-reveal>
-      <div><strong>Una plataforma para ordenar el día a día</strong><span>Menos hojas sueltas. Más control.</span></div>
-      <div><b>Inventario</b><span>Conectado con tus movimientos</span></div>
-      <div><b>Clientes y proveedores</b><span>Relaciones comerciales organizadas</span></div>
-      <div><b>Reportes</b><span>Información para decidir mejor</span></div>
     </section>
 
     <section className="landing-section landing-ecosystem" aria-labelledby="landing-ecosystem-title">
@@ -195,15 +194,13 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
 
     <section className="landing-section landing-features" id="funciones">
       <div className="landing-section-heading" data-reveal><p className="landing-eyebrow"><span /> Lo que puedes hacer</p><h2>Todo el control que tu empresa necesita para trabajar con confianza.</h2><p>Diseñado para equipos que reciben, clasifican, venden y reportan materiales todos los días.</p></div>
-      <div className="landing-feature-grid">{features.map(({ icon: Icon, title, text }) => <article key={title} className="landing-feature-card" data-reveal><span className="landing-feature-icon"><Icon aria-hidden="true" /></span><h3>{title}</h3><p>{text}</p><button type="button" onClick={onRequestAccess}>Conocer más <ArrowRight aria-hidden="true" /></button></article>)}</div>
+      <div className="landing-feature-grid">{features.map(({ icon: Icon, title, text }) => <article key={title} className="landing-feature-card" data-reveal><span className="landing-feature-icon"><Icon aria-hidden="true" /></span><h3>{title}</h3><p>{text}</p></article>)}</div>
     </section>
 
     <section className="landing-section landing-workflow" id="como-funciona">
-      <div className="landing-workflow-copy" data-reveal><p className="landing-eyebrow"><span /> Empieza de forma ordenada</p><h2>De la solicitud a una operación lista para crecer.</h2><p>Te acompañamos en el inicio para que tu equipo pueda trabajar con una base clara desde el primer día.</p><button className="landing-primary-cta" type="button" onClick={onRequestAccess}>Solicitar acceso <ArrowRight aria-hidden="true" /></button></div>
-      <div className="landing-steps"><article data-reveal><span>01</span><div><h3>Solicita tu acceso</h3><p>Cuéntanos quién eres y qué empresa quieres configurar.</p></div></article><article data-reveal><span>02</span><div><h3>Configuramos tu espacio</h3><p>Define usuarios, materiales, moneda y datos de la empresa.</p></div></article><article data-reveal><span>03</span><div><h3>Opera con información real</h3><p>Registra movimientos y consulta indicadores en un solo sistema.</p></div></article></div>
+      <div className="landing-workflow-copy" data-reveal><p className="landing-eyebrow"><span /> Empieza de forma ordenada</p><h2>De la solicitud a una operación lista para crecer.</h2><p>Te acompañamos en el inicio para que tu equipo pueda trabajar con una base clara desde el primer día.</p></div>
+      <div className="landing-steps">{workflowSteps.map(({ icon: Icon, title, text }) => <article key={title} data-reveal><span className="landing-step-icon"><Icon aria-hidden="true" /></span><div><h3>{title}</h3><p>{text}</p></div></article>)}</div>
     </section>
-
-    <section className="landing-cta-section" data-reveal><div><p className="landing-eyebrow"><span /> Gavrion EcoSystems</p><h2>Haz que cada movimiento cuente.</h2><p>Conoce una forma más ordenada de administrar tu empresa de reciclaje.</p></div><div className="landing-cta-actions"><ul>{benefits.map(({ icon: Icon, text }) => <li key={text} data-reveal><Icon aria-hidden="true" />{text}</li>)}</ul><button className="landing-primary-cta" type="button" onClick={onRequestAccess}>Solicitar acceso <ArrowRight aria-hidden="true" /></button></div></section>
 
     <section className="landing-contact" id="contacto" aria-labelledby="landing-contact-title">
       <div className="landing-contact-copy" data-reveal><p className="landing-eyebrow"><span /> Contacto directo</p><h2 id="landing-contact-title">¿Quieres conocer mejor el sistema?</h2><p>Conversemos sobre tu empresa y las herramientas que necesitas para controlar tu operación.</p></div>
@@ -214,6 +211,6 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
       </div>
     </section>
 
-    <footer className="landing-footer"><span>© {new Date().getFullYear()} Gavrion EcoSystems</span><span>Gestión empresarial para una operación más eficiente.</span><div><a href="mailto:gavrionn@gmail.com">gavrionn@gmail.com</a><a href="tel:+50498433252">+504 9843-3252</a><button type="button" onClick={onLogin}>Ingresar al sistema</button></div></footer>
+    <footer className="landing-footer"><span>© {new Date().getFullYear()} Gavrion EcoSystems</span><span>Gestión empresarial para una operación más eficiente.</span></footer>
   </main>;
 }
