@@ -106,3 +106,7 @@
   .landing-motion-ready .landing-hero-visual.is-visible .landing-preview-chart i,.landing-motion-ready .landing-hero-visual.is-visible .landing-orbit,.landing-motion-ready .landing-ecosystem-board.is-visible .landing-flow article,.landing-motion-ready .landing-ecosystem-board.is-visible .landing-board-records>div{animation:none}
   .landing-primary-cta,.landing-nav-cta,.landing-secondary-cta,.landing-feature-card,.landing-contact-options>a,.landing-feature-icon,.landing-step-icon,.landing-contact-options>a>span,.landing-contact-options>a>svg{transition:none}
 }
+
+/* El recurso trae una inclinación propia; la compensamos sin crear otro marco. */
+.landing-dashboard-art img{transform:translate(-10%,-10%) rotate(-1.8deg);transform-origin:center}
+@media(max-width:700px){.landing-dashboard-art img{transform:translate(-12%,-12%) rotate(-1.8deg)}}
