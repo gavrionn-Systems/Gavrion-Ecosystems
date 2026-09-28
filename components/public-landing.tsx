@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   FileCheck2,
   Handshake,
-  LayoutDashboard,
   Activity,
   Mail,
   MessageCircle,
@@ -64,34 +63,6 @@ const workflowSteps = [
   { icon: Settings2, title: 'Configuramos tu espacio', text: 'Define usuarios, materiales, moneda y datos de la empresa.' },
   { icon: Activity, title: 'Opera con información real', text: 'Registra movimientos y consulta indicadores en un solo sistema.' },
 ];
-
-function AnimatedNumber({ value, decimals = 0, prefix = '', suffix = '' }: { value: number; decimals?: number; prefix?: string; suffix?: string }) {
-  const ref = useRef<HTMLElement>(null);
-  const [display, setDisplay] = useState(0);
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      observer.disconnect();
-      if (reduced) { setDisplay(value); return; }
-      const duration = 520;
-      const started = performance.now();
-      const animate = (now: number) => {
-        const progress = Math.min(1, (now - started) / duration);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        setDisplay(value * eased);
-        if (progress < 1) requestAnimationFrame(animate);
-      };
-      requestAnimationFrame(animate);
-    }, { threshold: .6 });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [value]);
-  const formatted = display.toLocaleString('es-HN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-  return <b ref={ref} aria-label={`${prefix}${value.toLocaleString('es-HN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`}>{prefix}{formatted}{suffix}</b>;
-}
 
 export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingProps) {
   const rootRef = useRef<HTMLElement>(null);
@@ -151,16 +122,10 @@ export function PublicLanding({ logo, onLogin, onRequestAccess }: PublicLandingP
         <div className="landing-hero-note"><CheckCircle2 aria-hidden="true" /> Solicitud sujeta a aprobación para proteger cada empresa.</div>
       </div>
       <div className="landing-hero-visual" aria-label="Vista previa de la plataforma" data-reveal>
-        <div className="landing-orbit landing-orbit-one" />
-        <div className="landing-orbit landing-orbit-two" />
-        <div className="landing-preview-card landing-preview-main">
-          <div className="landing-preview-head"><span><LayoutDashboard aria-hidden="true" /> Resumen general</span><b>Mensual</b></div>
-          <strong>Dashboard</strong>
-          <p>Todo lo importante de tu operación, en una sola vista.</p>
-          <div className="landing-preview-kpis"><span><small>Inventario actual</small><AnimatedNumber value={8.74} decimals={2} suffix=" t" /></span><span><small>Valor inventario</small><AnimatedNumber value={87999} prefix="LPS " /></span><span><small>Movimientos</small><AnimatedNumber value={24} /></span></div>
-          <div className="landing-preview-chart"><i style={{ height: '42%' }} /><i style={{ height: '66%' }} /><i style={{ height: '52%' }} /><i style={{ height: '82%' }} /><i style={{ height: '61%' }} /><i style={{ height: '92%' }} /></div>
-        </div>
-        <div className="landing-preview-card landing-preview-float"><span className="landing-float-icon"><Boxes aria-hidden="true" /></span><span><small>Existencias disponibles</small><b>Control en tiempo real</b></span><CheckCircle2 aria-hidden="true" /></div>
+        <div className="landing-art-glow" aria-hidden="true" />
+        <figure className="landing-dashboard-art">
+          <img src="/landing-dashboard-preview.png" alt="Vista previa del dashboard de Gavrion EcoSystems" />
+        </figure>
       </div>
     </section>
 
