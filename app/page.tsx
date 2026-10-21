@@ -172,7 +172,7 @@ function AccessGate({ children }: {
 </form>
 {recoveryOpen && <PasswordRecoveryModal onClose={() => setRecoveryOpen(false)}/>}</main>;
     if (!demoMode && !accessStatus)
-        return <main className="setup-screen"><div className="setup-card"><div className="loader"/><p>Preparando tus permisos…</p></div></main>;
+        return <main className="setup-screen"><div className="setup-card">{error ? <><div className="form-error" role="alert">{error}</div><Button type="button" onClick={() => void refresh()}>Reintentar</Button></> : <><div className="loader"/><p>Preparando tus permisos…</p></>}</div></main>;
     if (accessStatus && !accessStatus.platform_admin && !accessStatus.platform_executive && accessStatus.status !== 'active') return <AccessPendingScreen status={accessStatus} onRefresh={() => void refresh()} onSignOut={() => void signOut()} />;
     return <>{children}</>;
 }

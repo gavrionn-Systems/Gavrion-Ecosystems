@@ -32,13 +32,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Gavrion EcoSystems',
     description: 'Inventario, compras, ventas y abastecimiento en un solo lugar.',
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Gavrion EcoSystems' }],
+    images: [{ url: '/landing-dashboard-preview.png', width: 1000, height: 700, alt: 'Dashboard de Gavrion EcoSystems' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Gavrion EcoSystems',
     description: 'Inventario, compras, ventas y abastecimiento en un solo lugar.',
-    images: ['/og.png'],
+    images: ['/landing-dashboard-preview.png'],
   },
 };
 
