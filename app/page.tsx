@@ -1195,9 +1195,17 @@ function EconexoApp() {
     const { user, profiles, settings, error, loading, refresh, signOut, accessStatus, notifications, unreadNotifications, markNotificationsRead } = useEconexoData();
     const profile = profiles.find(x => x.id === user?.id);
     const isAdmin = profile?.role === 'admin';
-    const isPlatformAdmin = accessStatus?.platform_admin === true;
-    const isPlatformExecutive = accessStatus?.platform_executive === true;
+    const accessFlag = (value: unknown) => value === true || String(value).trim().toLowerCase() === 'true';
+    const isPlatformAdmin = accessFlag(accessStatus?.platform_admin);
+    const isPlatformExecutive = accessFlag(accessStatus?.platform_executive);
     const isPlatformOperator = isPlatformAdmin || isPlatformExecutive;
+    const profileRoleLabel = isPlatformAdmin
+        ? 'Superadministrador'
+        : isPlatformExecutive
+            ? 'Ejecutivo de plataforma'
+            : isAdmin
+                ? 'Administrador'
+                : 'Vendedor';
     const [view, setView] = useState<View>(isPlatformOperator ? 'plataforma' : isAdmin ? 'dashboard' : 'inventarios');
     useEffect(() => { if (isPlatformOperator) setView('plataforma'); }, [isPlatformOperator]);
     const [editingInventory, setEditingInventory] = useState<InventoryRecord | undefined>();
@@ -1210,13 +1218,16 @@ function EconexoApp() {
     const title = useMemo(() => navItems.find(n => n.id === view)?.label ?? 'Inventario', [view]);
     const company = PLATFORM_NAME;
     const notify = (next: Notice) => { setNotice(next); window.setTimeout(() => setNotice(null), 3000); };
-    const go = (id: View) => { if (!isAdmin && ['dashboard', 'reportes', 'configuracion'].includes(id))
+    const go = (id: View) => { if (isPlatformOperator && id !== 'plataforma')
+        return; if (!isAdmin && ['dashboard', 'reportes', 'configuracion'].includes(id))
         return; if (id === 'plataforma' && !isPlatformOperator)
         return; setView(id); setDrawer(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     const editInventory = (record?: InventoryRecord) => { setEditingInventory(record); go('inventario-form'); };
     const moduleForNav: Record<string, string> = { dashboard: 'dashboard', inventarios: 'inventory', facturacion: 'weight_tickets', certificados: 'certificates', abastecimiento: 'suppliers', clientes: 'clients', reportes: 'reports' };
     const moduleEnabled = (id: string) => settings?.enabled_modules?.[moduleForNav[id] ?? id] !== false;
-    const canSeeNav = (item: typeof navItems[number]) => isPlatformExecutive && !isPlatformAdmin ? ('platformOnly' in item && item.platformOnly) : ((isAdmin || !item.admin) || ('platformOnly' in item && item.platformOnly && isPlatformOperator));
+    const canSeeNav = (item: typeof navItems[number]) => isPlatformOperator
+        ? ('platformOnly' in item && item.platformOnly)
+        : (isAdmin || !item.admin);
     const nav = <>
 <div className="brand platform-brand"><div className="platform-logo-frame"><img className="platform-logo" src={PLATFORM_LOGO} alt={company}/></div><strong className="platform-brand-name">{company}</strong><small>Sistema empresarial</small>
 </div>
@@ -1249,13 +1260,13 @@ function EconexoApp() {
 <span className="avatar">{initials(profile?.full_name ?? user?.email ?? 'Usuario')}</span>
 <div>
 <strong>{profile?.full_name ?? user?.email}</strong>
-<small>{isPlatformExecutive && !isPlatformAdmin ? 'Ejecutivo de plataforma' : isAdmin ? 'Administrador' : 'Vendedor'}</small>
+<small>{profileRoleLabel}</small>
 </div>
 <ChevronDown />
 </button>{profileOpen && <div className="profile-menu">
 <p>CUENTA</p>
 <button disabled>
-<UserCog />{isPlatformExecutive && !isPlatformAdmin ? 'Ejecutivo de plataforma' : isAdmin ? 'Administrador' : 'Vendedor'}</button>
+<UserCog />{profileRoleLabel}</button>
 <button onClick={() => { setSecurityOpen(true); setProfileOpen(false); }}><Lock />Cambiar contraseña</button>
 <hr />
 <button onClick={() => void signOut()}>Cerrar sesión</button>
